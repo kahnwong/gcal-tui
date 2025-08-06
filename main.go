@@ -130,20 +130,26 @@ func main() {
 					}
 				}
 
-				eventText := fmt.Sprintf("[white:blue]%s: %02d:%02d %-7s[-:-]\n", dayName[:3], hour, minute, eventTitle)
 				if isEventStart {
-					// Display title only at the start time
-					fmt.Fprintf(dayTextView, eventText)
+					// Calculate the length of the eventTitle
+					paddingValue := 23 //- len(eventTitle)
+
+					// Construct the format string dynamically
+					formatString := fmt.Sprintf("[white:blue]%%-%ds[-:-]\n", paddingValue)
+
+					// Use the dynamically created format string with Fprintf
+					fmt.Fprintf(dayTextView, formatString, eventTitle)
+					//fmt.Fprintf(dayTextView, "[white:blue]%-7s[-:-]\n", eventTitle)
 				} else if isEventContinuing {
 					// Fill the slot without the title
-					fmt.Fprintf(dayTextView, "[white:blue]   %02d:%02d       [-:-]\n", hour, minute)
+					fmt.Fprintf(dayTextView, "[white:blue]                       [-:-]\n")
 				} else {
 					// Empty slot
 					fmt.Fprintf(dayTextView, "       \n")
 				}
 			}
 		}
-		flex.AddItem(dayTextView, 0, 1, false) // Each day takes equal flexible width
+		flex.AddItem(dayTextView, 25, 1, false) // Each day takes equal flexible width
 	}
 
 	if err := app.SetRoot(flex, true).Run(); err != nil {
