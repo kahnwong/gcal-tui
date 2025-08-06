@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -10,6 +11,7 @@ import (
 	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/term"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 
@@ -101,8 +103,18 @@ func main() {
 	// Generate columns for each day of the week
 	weekDays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 	var dayViews []*tview.TextView
-	var currentOffset int = 0  // Track horizontal scroll position
-	var maxVisibleDays int = 4 // Default number of visible days
+	var currentOffset int = 0 // Track horizontal scroll position
+
+	// Calculate initial number of visible days based on terminal width
+	var maxVisibleDays int = 7 // Default to show all days
+	if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+		// Each day column needs ~25 chars, time scale needs 8 chars
+		availableWidth := termWidth - 8
+		calculatedDays := availableWidth / 25
+		if calculatedDays > 0 && calculatedDays < 7 {
+			maxVisibleDays = calculatedDays
+		}
+	}
 
 	// Ensure the week starts on Monday for consistent display
 	// 'today' is Monday, August 4, 2025, so startOfWeek will be today
@@ -277,6 +289,24 @@ func main() {
 					rebuildLayout()
 				}
 				return nil
+			case 'r':
+				// Refresh and recalculate terminal size
+				if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+					availableWidth := termWidth - 8
+					calculatedDays := availableWidth / 25
+					if calculatedDays > 0 && calculatedDays <= 7 {
+						maxVisibleDays = calculatedDays
+						// Adjust offset if needed
+						if currentOffset+maxVisibleDays > len(dayViews) {
+							currentOffset = len(dayViews) - maxVisibleDays
+							if currentOffset < 0 {
+								currentOffset = 0
+							}
+						}
+						rebuildLayout()
+					}
+				}
+				return nil
 			}
 		}
 		return event
@@ -287,7 +317,7 @@ func main() {
 	mainFlex.AddItem(flex, 0, 1, true)
 
 	statusText := tview.NewTextView().SetDynamicColors(true)
-	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]+/-[yellow]=Resize, [white]Esc[yellow]=Exit")
+	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]+/-[yellow]=Resize, [white]r[yellow]=Refresh Size, [white]Esc[yellow]=Exit")
 	statusText.SetTextAlign(tview.AlignCenter)
 	mainFlex.AddItem(statusText, 1, 1, false)
 
