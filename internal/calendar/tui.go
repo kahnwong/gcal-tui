@@ -13,23 +13,21 @@ import (
 	"golang.org/x/term"
 )
 
-var currentOffset int = 0 // Track horizontal scroll position
-var maxVisibleDays int
-var dayViews []*tview.TextView
-var flex *tview.Flex
-var timeScale *tview.TextView
-var mainFlex *tview.Flex
-var statusBarText = "[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]q[yellow]=Exit"
+var (
+	currentOffset  int = 0 // Track horizontal scroll position
+	maxVisibleDays int
+	dayViews       []*tview.TextView
+	flex           *tview.Flex
+	timeScale      *tview.TextView
+	mainFlex       *tview.Flex
+	statusBarText  = "[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]q[yellow]=Exit"
+)
 
 func RenderTUI(events []CalendarEvent) {
 	app := tview.NewApplication()
-
 	weekDays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
-
 	maxVisibleDays = getMaxVisibleDays()
-
-	// Ensure the week starts on Monday for consistent display
-	startOfWeek, _ := utils.GenerateStartAndEndOfWeekTime()
+	startOfWeek, _ := utils.GenerateStartAndEndOfWeekTime() // Ensure the week starts on Monday for consistent display
 
 	// Create all day views (but don't add to flex yet)
 	for i, dayName := range weekDays {
