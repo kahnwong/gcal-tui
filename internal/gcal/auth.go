@@ -31,7 +31,7 @@ func ReadOauthClientIDJSON() *oauth2.Config {
 }
 
 func GetClient(config *oauth2.Config) *http.Client {
-	tokFile := fmt.Sprintf("%s/%s-token.json", cliBase.ExpandHome("~/.config/gcal-tui"), configs.AppConfig.Accounts[0].Name) // [TODO] loop through all accounts
+	tokFile := fmt.Sprintf("%s/%s-token.json", configs.AppConfigBasePath, configs.AppConfig.Accounts[0].Name) // [TODO] loop through all accounts
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
 		log.Info().Msg("No valid token found, requesting new token from web")

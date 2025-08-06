@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"fmt"
 	cliBase "github.com/kahnwong/cli-base"
 )
 
@@ -12,4 +13,5 @@ type Config struct {
 	} `yaml:"accounts"`
 }
 
-var AppConfig = cliBase.ReadYaml[Config]("~/.config/gcal-tui/config.yaml") // init
+var AppConfigBasePath = cliBase.ExpandHome("~/.config/gcal-tui")
+var AppConfig = cliBase.ReadYaml[Config](fmt.Sprintf("%s/config.yaml", AppConfigBasePath)) // init
