@@ -126,6 +126,6 @@ func refreshToken(config *oauth2.Config, token *oauth2.Token) (*oauth2.Token, er
 		newToken.RefreshToken = token.RefreshToken
 	}
 
-	log.Debug().Msg("Successfully refreshed OAuth token")
+	//log.Debug().Msg("Successfully refreshed OAuth token")
 	return newToken, nil
 }
