@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/gdamore/tcell/v2"
 	"github.com/kahnwong/gcal-tui/internal/gcal"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
-	"time"
 
 	_ "github.com/kahnwong/gcal-tui/internal/logger"
 )
@@ -94,34 +96,6 @@ func main() {
 	// Use a fixed date for consistent example output, e.g., Monday, August 4, 2025
 	today := time.Date(2025, time.August, 4, 0, 0, 0, 0, now.Location())
 
-	//events := []CalendarEvent{
-	//	{
-	//		Title:     "Team Meeting",
-	//		StartTime: today.Add(9 * time.Hour),
-	//		EndTime:   today.Add(10 * time.Hour),
-	//	},
-	//	{
-	//		Title:     "Lunch Break",
-	//		StartTime: today.Add(12 * time.Hour).Add(30 * time.Minute),
-	//		EndTime:   today.Add(13 * time.Hour),
-	//	},
-	//	{
-	//		Title:     "Project Review",
-	//		StartTime: today.Add(24 * time.Hour).Add(14 * time.Hour), // Tomorrow 2 PM (Tuesday)
-	//		EndTime:   today.Add(24 * time.Hour).Add(16 * time.Hour),
-	//	},
-	//	{
-	//		Title:     "Client Call",
-	//		StartTime: today.Add(48 * time.Hour).Add(10 * time.Hour).Add(30 * time.Minute), // Day after tomorrow 10:30 AM (Wednesday)
-	//		EndTime:   today.Add(48 * time.Hour).Add(11 * time.Hour).Add(30 * time.Minute),
-	//	},
-	//	{
-	//		Title:     "GoLang Workshop",
-	//		StartTime: today.Add(72 * time.Hour).Add(9 * time.Hour), // Thursday 9 AM
-	//		EndTime:   today.Add(72 * time.Hour).Add(12 * time.Hour),
-	//	},
-	//}
-
 	// Create the main flex layout for the week view
 	flex := tview.NewFlex()
 
@@ -135,6 +109,7 @@ func main() {
 
 	// Generate columns for each day of the week
 	weekDays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
+	var dayViews []*tview.TextView
 
 	// Ensure the week starts on Monday for consistent display
 	// 'today' is Monday, August 4, 2025, so startOfWeek will be today
@@ -143,6 +118,7 @@ func main() {
 	for i, dayName := range weekDays {
 		dayTextView := tview.NewTextView().SetDynamicColors(true)
 		dayTextView.SetBorder(true).SetTitle(dayName)
+		dayViews = append(dayViews, dayTextView)
 
 		currentDay := startOfWeek.Add(time.Duration(i) * 24 * time.Hour)
 
@@ -191,7 +167,56 @@ func main() {
 		flex.AddItem(dayTextView, 25, 1, false) // Each day takes equal flexible width
 	}
 
-	if err := app.SetRoot(flex, true).Run(); err != nil {
+	// Add input handler for scrolling
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlF:
+			// Scroll down all views
+			for _, dayView := range dayViews {
+				row, _ := dayView.GetScrollOffset()
+				dayView.ScrollTo(row+5, 0) // Scroll down by 5 lines
+			}
+			// Also scroll the time scale
+			timeRow, _ := timeScale.GetScrollOffset()
+			timeScale.ScrollTo(timeRow+5, 0)
+			return nil
+		case tcell.KeyCtrlB:
+			// Scroll up all views (bonus feature)
+			for _, dayView := range dayViews {
+				row, _ := dayView.GetScrollOffset()
+				if row >= 5 {
+					dayView.ScrollTo(row-5, 0) // Scroll up by 5 lines
+				} else {
+					dayView.ScrollTo(0, 0) // Scroll to top
+				}
+			}
+			// Also scroll the time scale up
+			timeRow, _ := timeScale.GetScrollOffset()
+			if timeRow >= 5 {
+				timeScale.ScrollTo(timeRow-5, 0)
+			} else {
+				timeScale.ScrollTo(0, 0)
+			}
+			return nil
+		case tcell.KeyEsc:
+			// Exit the application
+			app.Stop()
+			return nil
+		}
+		return event
+	})
+
+	// Add a status bar to show available key bindings
+	statusText := tview.NewTextView().SetDynamicColors(true)
+	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]Esc[yellow]=Exit")
+	statusText.SetTextAlign(tview.AlignCenter)
+
+	// Create main layout with status bar at the bottom
+	mainFlex := tview.NewFlex().SetDirection(tview.FlexRow)
+	mainFlex.AddItem(flex, 0, 1, true)
+	mainFlex.AddItem(statusText, 1, 1, false)
+
+	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
 		panic(err)
 	}
 }
