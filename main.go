@@ -8,7 +8,6 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	cal "github.com/kahnwong/gcal-tui/internal/calendar"
-	"github.com/kahnwong/gcal-tui/internal/gcal"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/term"
@@ -18,12 +17,8 @@ func main() {
 	// init log
 	log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	// login
-	oathClientIDJson := gcal.ReadOauthClientID()
-	client := gcal.GetClient(oathClientIDJson)
-
-	events := gcal.GetEvents(client)
-	calendarEvents := cal.ParseCalendars(events)
+	// fetch data
+	events := cal.FetchCalendars()
 
 	//////
 	app := tview.NewApplication()
@@ -70,7 +65,7 @@ func main() {
 				isEventContinuing := false
 				eventTitle := ""
 
-				for _, event := range calendarEvents {
+				for _, event := range events {
 					// Check if this slot is the exact start of an event
 					if slotTime.Equal(event.StartTime) {
 						isEventStart = true

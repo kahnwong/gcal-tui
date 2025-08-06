@@ -1,6 +1,9 @@
 package calendar
 
 import (
+	cliBase "github.com/kahnwong/cli-base"
+	"github.com/kahnwong/gcal-tui/configs"
+	"github.com/kahnwong/gcal-tui/internal/gcal"
 	"google.golang.org/api/calendar/v3"
 	"time"
 )
@@ -61,4 +64,19 @@ func ParseCalendars(events *calendar.Events) []CalendarEvent {
 	}
 
 	return calendarEvents
+}
+
+func FetchCalendars() []CalendarEvent {
+	var allEvents []CalendarEvent
+	for _, c := range configs.AppConfig.Accounts {
+		oathClientIDJson := gcal.ReadOauthClientID(cliBase.ExpandHome(c.Credentials))
+		client := gcal.GetClient(c.Name, oathClientIDJson)
+
+		events := gcal.GetEvents(client)
+		calendarEvents := ParseCalendars(events)
+
+		allEvents = append(allEvents, calendarEvents...)
+	}
+
+	return allEvents
 }

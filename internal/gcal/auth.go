@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	cliBase "github.com/kahnwong/cli-base"
 	"github.com/kahnwong/gcal-tui/configs"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/oauth2"
@@ -16,8 +15,8 @@ import (
 	"time"
 )
 
-func ReadOauthClientID() *oauth2.Config {
-	b, err := os.ReadFile(cliBase.ExpandHome(configs.AppConfig.Accounts[0].Credentials)) // [TODO] loop through all accounts
+func ReadOauthClientID(path string) *oauth2.Config {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to read client secret file")
 	}
@@ -30,8 +29,8 @@ func ReadOauthClientID() *oauth2.Config {
 	return config
 }
 
-func GetClient(config *oauth2.Config) *http.Client {
-	tokFile := fmt.Sprintf("%s/%s-token.json", configs.AppConfigBasePath, configs.AppConfig.Accounts[0].Name) // [TODO] loop through all accounts
+func GetClient(accountName string, config *oauth2.Config) *http.Client {
+	tokFile := fmt.Sprintf("%s/%s-token.json", configs.AppConfigBasePath, accountName)
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
 		log.Info().Msg("No valid token found, requesting new token from web")
