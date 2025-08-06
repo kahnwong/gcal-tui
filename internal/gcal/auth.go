@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	cliBase "github.com/kahnwong/cli-base"
 	"github.com/kahnwong/gcal-tui/configs"
@@ -35,8 +36,22 @@ func GetClient(config *oauth2.Config) *http.Client {
 	tokFile := fmt.Sprintf("%s/%s-token.json", cliBase.ExpandHome("~/.config/gcal-tui"), configs.AppConfig.Accounts[0].Name) // [TODO] loop through all accounts
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
+		log.Info().Msg("No valid token found, requesting new token from web")
 		tok = getTokenFromWeb(config)
 		saveToken(tokFile, tok)
+	} else if !tok.Valid() || tok.Expiry.Before(time.Now().Add(5*time.Minute)) {
+		// Token is invalid, expired, or expires within 5 minutes, try to refresh it
+		log.Info().Msg("Token expired or expiring soon, attempting to refresh")
+		tok, err = refreshToken(config, tok)
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to refresh token, requesting new token from web")
+			tok = getTokenFromWeb(config)
+		} else {
+			log.Info().Msg("Token refreshed successfully")
+		}
+		saveToken(tokFile, tok)
+	} else {
+		log.Debug().Msg("Using existing valid token")
 	}
 	return config.Client(context.Background(), tok)
 }
@@ -91,3 +106,30 @@ func saveToken(path string, token *oauth2.Token) {
 		log.Fatal().Err(err).Msg("Unable to cache oauth token")
 	}
 }
+
+func refreshToken(config *oauth2.Config, token *oauth2.Token) (*oauth2.Token, error) {
+	if token.RefreshToken == "" {
+		return nil, fmt.Errorf("no refresh token available")
+	}
+
+	tokenSource := config.TokenSource(context.Background(), token)
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh token: %w", err)
+	}
+
+	// Ensure we preserve the refresh token if it's not included in the response
+	if newToken.RefreshToken == "" && token.RefreshToken != "" {
+		newToken.RefreshToken = token.RefreshToken
+	}
+
+	log.Debug().Msg("Successfully refreshed OAuth token")
+	return newToken, nil
+}
+
+// func main() {
+// 	oathClientIDJson := ReadOauthClientIDJSON()
+// 	client := GetClient(oathClientIDJson)
+
+// 	fmt.Println(client)
+// }
