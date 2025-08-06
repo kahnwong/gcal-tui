@@ -3,6 +3,7 @@ module github.com/kahnwong/gcal-tui
 go 1.24.3
 
 require (
+	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/kahnwong/cli-base v0.0.0-20250806100710-60d4c6902dd9
 	github.com/rivo/tview v0.0.0-20250625164341-a4a78f1e05cb
 	github.com/rs/zerolog v1.34.0
@@ -16,7 +17,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/gdamore/tcell/v2 v2.8.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect

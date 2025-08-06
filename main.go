@@ -198,17 +198,19 @@ func main() {
 				timeScale.ScrollTo(0, 0)
 			}
 			return nil
-		case tcell.KeyEsc:
-			// Exit the application
-			app.Stop()
-			return nil
+		case tcell.KeyRune:
+			if event.Rune() == 'q' {
+				// Exit the application
+				app.Stop()
+				return nil
+			}
 		}
 		return event
 	})
 
 	// Add a status bar to show available key bindings
 	statusText := tview.NewTextView().SetDynamicColors(true)
-	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]Esc[yellow]=Exit")
+	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]Q[yellow]=Exit")
 	statusText.SetTextAlign(tview.AlignCenter)
 
 	// Create main layout with status bar at the bottom
