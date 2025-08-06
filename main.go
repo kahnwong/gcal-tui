@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/rs/zerolog"
 	"os"
@@ -10,12 +9,9 @@ import (
 	"github.com/gdamore/tcell/v2"
 	cal "github.com/kahnwong/gcal-tui/internal/calendar"
 	"github.com/kahnwong/gcal-tui/internal/gcal"
-	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/term"
-	"google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
 )
 
 func main() {
@@ -26,25 +22,10 @@ func main() {
 	oathClientIDJson := gcal.ReadOauthClientID()
 	client := gcal.GetClient(oathClientIDJson)
 
-	ctx := context.Background()
-	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
-	}
-
-	//// show calendar lists: run manually because I'm too lazy to expose it
-	//gcal.ListCalendars(srv)
-	//
-	// show events
-	currentMonday, upcomingMonday := utils.GenerateStartAndEndOfWeekTime()
-	events, err := srv.Events.List("primary").ShowDeleted(false).
-		SingleEvents(true).TimeMin(currentMonday.Format(time.RFC3339)).TimeMax(upcomingMonday.Format(time.RFC3339)).MaxResults(10).OrderBy("startTime").Do()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to retrieve next ten of the user's events")
-	}
-
+	events := gcal.GetEvents(client)
 	calendarEvents := cal.ParseCalendars(events)
-	//
+
+	//////
 	app := tview.NewApplication()
 
 	// Define some sample events
