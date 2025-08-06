@@ -66,16 +66,18 @@ func ParseCalendars(events *calendar.Events) []CalendarEvent {
 	return calendarEvents
 }
 
-func FetchCalendars() []CalendarEvent {
+func FetchAllEvents() []CalendarEvent {
 	var allEvents []CalendarEvent
 	for _, c := range configs.AppConfig.Accounts {
 		oathClientIDJson := gcal.ReadOauthClientID(cliBase.ExpandHome(c.Credentials))
 		client := gcal.GetClient(c.Name, oathClientIDJson)
 
-		events := gcal.GetEvents(client)
-		calendarEvents := ParseCalendars(events)
+		for _, calendarId := range c.Calendars {
+			events := gcal.GetEvents(calendarId, client)
+			calendarEvents := ParseCalendars(events)
 
-		allEvents = append(allEvents, calendarEvents...)
+			allEvents = append(allEvents, calendarEvents...)
+		}
 	}
 
 	return allEvents

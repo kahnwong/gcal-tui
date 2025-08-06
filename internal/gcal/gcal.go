@@ -30,7 +30,7 @@ func ListCalendars(srv *calendar.Service) {
 	}
 }
 
-func GetEvents(client *http.Client) *calendar.Events {
+func GetEvents(calendarId string, client *http.Client) *calendar.Events {
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
@@ -41,7 +41,7 @@ func GetEvents(client *http.Client) *calendar.Events {
 
 	// show events
 	currentMonday, upcomingMonday := utils.GenerateStartAndEndOfWeekTime()
-	events, err := srv.Events.List("primary").ShowDeleted(false).
+	events, err := srv.Events.List(calendarId).ShowDeleted(false).
 		SingleEvents(true).
 		TimeMin(currentMonday.Format(time.RFC3339)).
 		TimeMax(upcomingMonday.Format(time.RFC3339)).

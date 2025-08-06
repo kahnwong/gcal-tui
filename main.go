@@ -18,7 +18,7 @@ func main() {
 	log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	// fetch data
-	events := cal.FetchCalendars()
+	events := cal.FetchAllEvents()
 
 	//////
 	app := tview.NewApplication()
