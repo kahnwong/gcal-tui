@@ -8,6 +8,15 @@ I found `Calcure` but I want a week-view.
 
 So here we are. Plus I use multiple calendars, so there's that.
 
+## Notes
+
+Don't forget to unquote `authorization code` obtained from the redirected URL
+
+```python
+from urllib.parse import unquote
+unquote("AUTHORIZATION_CODE")
+```
+
 
 ## Pre-reqs
 

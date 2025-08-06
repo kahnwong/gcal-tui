@@ -8,13 +8,15 @@ import (
 	"net/http"
 	"os"
 
+	cliBase "github.com/kahnwong/cli-base"
+	"github.com/kahnwong/gcal-tui/configs"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
 )
 
 func ReadOauthClientIDJSON() *oauth2.Config {
-	b, err := os.ReadFile("/Users/kahnwong/.config/gcal-tui/karnsireew.json")
+	b, err := os.ReadFile(cliBase.ExpandHome(configs.AppConfig.Accounts[0].Credentials)) // [TODO] loop through all accounts
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
 	}
@@ -80,7 +82,11 @@ func saveToken(path string, token *oauth2.Token) {
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
-			log.Fatalf("Unable to cache oauth token: %v", err)
+			log.Fatalf("Error closing oauth token file: %v", err)
 		}
 	}(f)
+	err = json.NewEncoder(f).Encode(token)
+	if err != nil {
+		log.Fatalf("Unable to cache oauth token: %v", err)
+	}
 }
