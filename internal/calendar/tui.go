@@ -154,9 +154,18 @@ func RenderTUI(events []CalendarEvent) {
 		return event
 	})
 
-	// Set up periodic resize checking with context for proper cleanup
+	periodicResize(ctx, app)
 
-	go func() {
+	setStatusBar()
+
+	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
+		panic(err)
+	}
+}
+
+func periodicResize(ctx context.Context, app *tview.Application) {
+	// Set up periodic resize checking with context for proper cleanup
+	go func() { // don't remove `go func`
 		var lastWidth int
 
 		// Get initial terminal size
@@ -186,12 +195,6 @@ func RenderTUI(events []CalendarEvent) {
 			}
 		}
 	}()
-
-	setStatusBar()
-
-	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
-		panic(err)
-	}
 }
 
 func setStatusBar() {
