@@ -247,10 +247,6 @@ func main() {
 				}
 			}
 			return nil
-		case tcell.KeyEsc:
-			// Exit the application
-			app.Stop()
-			return nil
 		case tcell.KeyRune:
 			// Handle character keys for horizontal scrolling
 			switch event.Rune() {
@@ -265,27 +261,6 @@ func main() {
 				// Scroll right (show next day columns)
 				if currentOffset+maxVisibleDays < len(dayViews) {
 					currentOffset++
-					rebuildLayout()
-				}
-				return nil
-			case '+':
-				// Increase visible days (up to 7)
-				if maxVisibleDays < 7 {
-					maxVisibleDays++
-					rebuildLayout()
-				}
-				return nil
-			case '-':
-				// Decrease visible days (minimum 1)
-				if maxVisibleDays > 1 {
-					maxVisibleDays--
-					// Adjust offset if needed
-					if currentOffset+maxVisibleDays > len(dayViews) {
-						currentOffset = len(dayViews) - maxVisibleDays
-						if currentOffset < 0 {
-							currentOffset = 0
-						}
-					}
 					rebuildLayout()
 				}
 				return nil
@@ -306,6 +281,11 @@ func main() {
 						rebuildLayout()
 					}
 				}
+				return nil
+
+			case 'q':
+				// Exit the application
+				app.Stop()
 				return nil
 			}
 		}
