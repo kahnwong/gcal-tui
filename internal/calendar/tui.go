@@ -81,8 +81,6 @@ func RenderTUI(events []CalendarEvent) {
 		}
 	}
 
-	// Function to rebuild the flex layout based on current offset
-
 	// Initial layout build
 	rebuildLayout()
 
@@ -90,8 +88,31 @@ func RenderTUI(events []CalendarEvent) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Add input handler for scrolling
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	app.SetInputCapture(setKeys(cancel, app))
+	periodicResize(ctx, app)
+	setStatusBar()
+
+	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
+		panic(err)
+	}
+}
+
+func getMaxVisibleDays() int {
+	// Calculate initial number of visible days based on terminal width
+	maxVisibleDays = 7 // Default to show all days
+	if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+		// Each day column needs ~25 chars, time scale needs 8 chars
+		availableWidth := termWidth - 8
+		calculatedDays := availableWidth / 25
+		if calculatedDays > 0 && calculatedDays < 7 {
+			maxVisibleDays = calculatedDays
+		}
+	}
+	return maxVisibleDays
+}
+
+func setKeys(cancel context.CancelFunc, app *tview.Application) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlF:
 			// Scroll down all currently visible views
@@ -152,32 +173,10 @@ func RenderTUI(events []CalendarEvent) {
 			}
 		}
 		return event
-	})
-
-	periodicResize(ctx, app)
-
-	setStatusBar()
-
-	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
-		panic(err)
 	}
 }
-
-func getMaxVisibleDays() int {
-	// Calculate initial number of visible days based on terminal width
-	maxVisibleDays = 7 // Default to show all days
-	if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-		// Each day column needs ~25 chars, time scale needs 8 chars
-		availableWidth := termWidth - 8
-		calculatedDays := availableWidth / 25
-		if calculatedDays > 0 && calculatedDays < 7 {
-			maxVisibleDays = calculatedDays
-		}
-	}
-	return maxVisibleDays
-}
-
 func rebuildLayout() {
+	// Function to rebuild the flex layout based on current offset
 	flex = tview.NewFlex()
 
 	// Add time scale column
