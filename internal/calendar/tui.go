@@ -187,6 +187,14 @@ func RenderTUI(events []CalendarEvent) {
 		}
 	}()
 
+	setStatusBar()
+
+	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
+		panic(err)
+	}
+}
+
+func setStatusBar() {
 	// Create main layout with status bar at the bottom
 	mainFlex = tview.NewFlex().SetDirection(tview.FlexRow)
 	mainFlex.AddItem(flex, 0, 1, true)
@@ -195,10 +203,6 @@ func RenderTUI(events []CalendarEvent) {
 	statusText.SetText(statusBarText)
 	statusText.SetTextAlign(tview.AlignCenter)
 	mainFlex.AddItem(statusText, 1, 1, false)
-
-	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
-		panic(err)
-	}
 }
 
 func getMaxVisibleDays() int {
