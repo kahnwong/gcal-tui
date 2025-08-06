@@ -2,13 +2,15 @@
 package calendar
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rivo/tview"
 	"golang.org/x/term"
-	"os"
-	"time"
 )
 
 var currentOffset int = 0 // Track horizontal scroll position
@@ -85,6 +87,10 @@ func RenderTUI(events []CalendarEvent) {
 	// Initial layout build
 	rebuildLayout()
 
+	// Set up context for proper cleanup of goroutines
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Add input handler for scrolling
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -141,25 +147,11 @@ func RenderTUI(events []CalendarEvent) {
 				return nil
 			case 'r':
 				// Refresh and recalculate terminal size
-				if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-					availableWidth := termWidth - 8
-					calculatedDays := availableWidth / 25
-					if calculatedDays > 0 && calculatedDays <= 7 {
-						maxVisibleDays = calculatedDays
-						// Adjust offset if needed
-						if currentOffset+maxVisibleDays > len(dayViews) {
-							currentOffset = len(dayViews) - maxVisibleDays
-							if currentOffset < 0 {
-								currentOffset = 0
-							}
-						}
-						rebuildLayout()
-					}
-				}
+				handleResize()
 				return nil
-
 			case 'q':
 				// Exit the application
+				cancel() // Cancel the resize detection goroutine
 				app.Stop()
 				return nil
 			}
@@ -167,12 +159,45 @@ func RenderTUI(events []CalendarEvent) {
 		return event
 	})
 
+	// Set up periodic resize checking with context for proper cleanup
+
+	go func() {
+		var lastWidth int
+
+		// Get initial terminal size
+		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+			lastWidth = w
+		}
+
+		// Check for size changes every 250ms for more responsive resizing
+		ticker := time.NewTicker(250 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+					// Only trigger resize handling for horizontal changes
+					// since vertical changes are handled automatically by tview
+					if w != lastWidth {
+						lastWidth = w
+						app.QueueUpdateDraw(func() {
+							handleResize()
+						})
+					}
+				}
+			}
+		}
+	}()
+
 	// Create main layout with status bar at the bottom
 	mainFlex = tview.NewFlex().SetDirection(tview.FlexRow)
 	mainFlex.AddItem(flex, 0, 1, true)
 
 	statusText := tview.NewTextView().SetDynamicColors(true)
-	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]+/-[yellow]=Resize, [white]r[yellow]=Refresh Size, [white]Esc[yellow]=Exit")
+	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]r[yellow]=Manual Refresh, [white]q[yellow]=Exit")
 	statusText.SetTextAlign(tview.AlignCenter)
 	mainFlex.AddItem(statusText, 1, 1, false)
 
@@ -219,8 +244,26 @@ func rebuildLayout() {
 
 		// Add status bar
 		statusText := tview.NewTextView().SetDynamicColors(true)
-		statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]h[yellow]=Scroll Left, [white]l[yellow]=Scroll Right, [white]Esc[yellow]=Exit")
+		statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]h[yellow]=Scroll Left, [white]l[yellow]=Scroll Right, [white]r[yellow]=Manual Refresh, [white]q[yellow]=Exit")
 		statusText.SetTextAlign(tview.AlignCenter)
 		mainFlex.AddItem(statusText, 1, 1, false)
+	}
+}
+
+func handleResize() {
+	if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+		availableWidth := termWidth - 8
+		calculatedDays := availableWidth / 25
+		if calculatedDays > 0 && calculatedDays <= 7 {
+			maxVisibleDays = calculatedDays
+			// Adjust offset if needed
+			if currentOffset+maxVisibleDays > len(dayViews) {
+				currentOffset = len(dayViews) - maxVisibleDays
+				if currentOffset < 0 {
+					currentOffset = 0
+				}
+			}
+			rebuildLayout()
+		}
 	}
 }
