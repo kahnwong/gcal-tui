@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/kahnwong/gcal-tui/internal/gcal"
 	"github.com/rivo/tview"
+	"github.com/rs/zerolog/log"
+	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
 	"time"
 
 	_ "github.com/kahnwong/gcal-tui/internal/logger"
@@ -15,37 +20,71 @@ type CalendarEvent struct {
 }
 
 func main() {
-	//oathClientIDJson := gcal.ReadOauthClientIDJSON()
-	//client := gcal.GetClient(oathClientIDJson)
-	//
-	//ctx := context.Background()
-	//srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
-	//if err != nil {
-	//	log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
-	//}
+	oathClientIDJson := gcal.ReadOauthClientIDJSON()
+	client := gcal.GetClient(oathClientIDJson)
+
+	ctx := context.Background()
+	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
+	}
 
 	//// show calendar lists: run manually because I'm too lazy to expose it
 	//gcal.ListCalendars(srv)
 	//
-	//// show events
-	//t := time.Now().Format(time.RFC3339)
-	//events, err := srv.Events.List("primary").ShowDeleted(false).
-	//	SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
-	//if err != nil {
-	//	log.Fatal().Err(err).Msg("Unable to retrieve next ten of the user's events")
-	//}
-	//fmt.Println("Upcoming events:")
-	//if len(events.Items) == 0 {
-	//	fmt.Println("No upcoming events found.")
-	//} else {
-	//	for _, item := range events.Items {
-	//		date := item.Start.DateTime
-	//		if date == "" {
-	//			date = item.Start.Date
-	//		}
-	//		fmt.Printf("%v (%v)\n", item.Summary, date)
-	//	}
-	//}
+	// show events
+	var calendarEvents []CalendarEvent
+	t := time.Now().Format(time.RFC3339)
+	events, err := srv.Events.List("primary").ShowDeleted(false).
+		SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Unable to retrieve next ten of the user's events")
+	}
+	for _, item := range events.Items {
+		event := CalendarEvent{
+			Title: item.Summary,
+		}
+
+		// Handle all-day events vs. timed events
+		if item.Start.DateTime != "" {
+			// Timed event
+			startTime, err := time.Parse(time.RFC3339, item.Start.DateTime)
+			if err != nil {
+				//fmt.Errorf("error parsing start time for event '%s': %w", item.Summary, err)
+			}
+			event.StartTime = startTime
+
+			endTime, err := time.Parse(time.RFC3339, item.End.DateTime)
+			if err != nil {
+				//fmt.Errorf("error parsing end time for event '%s': %w", item.Summary, err)
+			}
+			event.EndTime = endTime
+		} else if item.Start.Date != "" {
+			// All-day event
+			// For all-day events, the API returns "YYYY-MM-DD".
+			// We can interpret this as the start of the day in UTC, or the local timezone
+			// depending on requirements. For simplicity, we'll parse it as a date and
+			// set time to midnight. Note that Google Calendar's all-day events
+			// endDate is exclusive, so it might be the next day.
+			startDate, err := time.Parse("2006-01-02", item.Start.Date)
+			if err != nil {
+				//fmt.Errorf("error parsing all-day start date for event '%s': %w", item.Summary, err)
+			}
+			event.StartTime = startDate
+
+			endDate, err := time.Parse("2006-01-02", item.End.Date)
+			if err != nil {
+				//fmt.Errorf("error parsing all-day end date for event '%s': %w", item.Summary, err)
+			}
+			// For all-day events, Google Calendar's end date is exclusive.
+			// To represent the end of the last day, subtract a nanosecond.
+			event.EndTime = endDate.Add(-time.Nanosecond)
+		} else {
+			//fmt.Errorf("event '%s' has no start or end time/date", item.Summary)
+		}
+
+		calendarEvents = append(calendarEvents, event)
+	}
 
 	//
 	app := tview.NewApplication()
@@ -55,33 +94,33 @@ func main() {
 	// Use a fixed date for consistent example output, e.g., Monday, August 4, 2025
 	today := time.Date(2025, time.August, 4, 0, 0, 0, 0, now.Location())
 
-	events := []CalendarEvent{
-		{
-			Title:     "Team Meeting",
-			StartTime: today.Add(9 * time.Hour),
-			EndTime:   today.Add(10 * time.Hour),
-		},
-		{
-			Title:     "Lunch Break",
-			StartTime: today.Add(12 * time.Hour).Add(30 * time.Minute),
-			EndTime:   today.Add(13 * time.Hour),
-		},
-		{
-			Title:     "Project Review",
-			StartTime: today.Add(24 * time.Hour).Add(14 * time.Hour), // Tomorrow 2 PM (Tuesday)
-			EndTime:   today.Add(24 * time.Hour).Add(16 * time.Hour),
-		},
-		{
-			Title:     "Client Call",
-			StartTime: today.Add(48 * time.Hour).Add(10 * time.Hour).Add(30 * time.Minute), // Day after tomorrow 10:30 AM (Wednesday)
-			EndTime:   today.Add(48 * time.Hour).Add(11 * time.Hour).Add(30 * time.Minute),
-		},
-		{
-			Title:     "GoLang Workshop",
-			StartTime: today.Add(72 * time.Hour).Add(9 * time.Hour), // Thursday 9 AM
-			EndTime:   today.Add(72 * time.Hour).Add(12 * time.Hour),
-		},
-	}
+	//events := []CalendarEvent{
+	//	{
+	//		Title:     "Team Meeting",
+	//		StartTime: today.Add(9 * time.Hour),
+	//		EndTime:   today.Add(10 * time.Hour),
+	//	},
+	//	{
+	//		Title:     "Lunch Break",
+	//		StartTime: today.Add(12 * time.Hour).Add(30 * time.Minute),
+	//		EndTime:   today.Add(13 * time.Hour),
+	//	},
+	//	{
+	//		Title:     "Project Review",
+	//		StartTime: today.Add(24 * time.Hour).Add(14 * time.Hour), // Tomorrow 2 PM (Tuesday)
+	//		EndTime:   today.Add(24 * time.Hour).Add(16 * time.Hour),
+	//	},
+	//	{
+	//		Title:     "Client Call",
+	//		StartTime: today.Add(48 * time.Hour).Add(10 * time.Hour).Add(30 * time.Minute), // Day after tomorrow 10:30 AM (Wednesday)
+	//		EndTime:   today.Add(48 * time.Hour).Add(11 * time.Hour).Add(30 * time.Minute),
+	//	},
+	//	{
+	//		Title:     "GoLang Workshop",
+	//		StartTime: today.Add(72 * time.Hour).Add(9 * time.Hour), // Thursday 9 AM
+	//		EndTime:   today.Add(72 * time.Hour).Add(12 * time.Hour),
+	//	},
+	//}
 
 	// Create the main flex layout for the week view
 	flex := tview.NewFlex()
@@ -116,7 +155,7 @@ func main() {
 				isEventContinuing := false
 				eventTitle := ""
 
-				for _, event := range events {
+				for _, event := range calendarEvents {
 					// Check if this slot is the exact start of an event
 					if slotTime.Equal(event.StartTime) {
 						isEventStart = true
