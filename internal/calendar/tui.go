@@ -1,3 +1,4 @@
+// generated via gemini. refactored by Karn Wong <karn@karnwong.me>
 package calendar
 
 import (
@@ -10,26 +11,15 @@ import (
 	"time"
 )
 
+var currentOffset int = 0 // Track horizontal scroll position
+
 func RenderTUI(events []CalendarEvent) {
 	app := tview.NewApplication()
 
-	// Define some sample events
-
-	// Generate columns for each day of the week
 	weekDays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 	var dayViews []*tview.TextView
-	var currentOffset int = 0 // Track horizontal scroll position
 
-	// Calculate initial number of visible days based on terminal width
-	var maxVisibleDays int = 7 // Default to show all days
-	if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-		// Each day column needs ~25 chars, time scale needs 8 chars
-		availableWidth := termWidth - 8
-		calculatedDays := availableWidth / 25
-		if calculatedDays > 0 && calculatedDays < 7 {
-			maxVisibleDays = calculatedDays
-		}
-	}
+	maxVisibleDays := getMaxVisibleDays()
 
 	// Ensure the week starts on Monday for consistent display
 	startOfWeek, _ := utils.GenerateStartAndEndOfWeekTime()
@@ -218,4 +208,18 @@ func RenderTUI(events []CalendarEvent) {
 	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
 		panic(err)
 	}
+}
+
+func getMaxVisibleDays() int {
+	// Calculate initial number of visible days based on terminal width
+	var maxVisibleDays int = 7 // Default to show all days
+	if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+		// Each day column needs ~25 chars, time scale needs 8 chars
+		availableWidth := termWidth - 8
+		calculatedDays := availableWidth / 25
+		if calculatedDays > 0 && calculatedDays < 7 {
+			maxVisibleDays = calculatedDays
+		}
+	}
+	return maxVisibleDays
 }
