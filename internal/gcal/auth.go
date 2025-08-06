@@ -1,21 +1,19 @@
-// initial code is from google sdk d ocs
+// initial code is from google sdk docs
 package gcal
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
-	"time"
-
 	cliBase "github.com/kahnwong/cli-base"
 	"github.com/kahnwong/gcal-tui/configs"
-	_ "github.com/kahnwong/gcal-tui/internal/logger"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
+	"net/http"
+	"os"
+	"time"
 )
 
 func ReadOauthClientIDJSON() *oauth2.Config {

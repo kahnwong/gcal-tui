@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/rs/zerolog"
 	"os"
 	"time"
 
@@ -14,8 +15,6 @@ import (
 	"golang.org/x/term"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
-
-	_ "github.com/kahnwong/gcal-tui/internal/logger"
 )
 
 type CalendarEvent struct {
@@ -25,6 +24,10 @@ type CalendarEvent struct {
 }
 
 func main() {
+	// init log
+	log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	// login
 	oathClientIDJson := gcal.ReadOauthClientIDJSON()
 	client := gcal.GetClient(oathClientIDJson)
 

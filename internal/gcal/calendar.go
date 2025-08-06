@@ -5,8 +5,6 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
-
-	_ "github.com/kahnwong/gcal-tui/internal/logger"
 )
 
 func ListCalendars(srv *calendar.Service) {
