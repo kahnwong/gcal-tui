@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	cal "github.com/kahnwong/gcal-tui/internal/calendar"
 	"github.com/kahnwong/gcal-tui/internal/gcal"
 	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rivo/tview"
@@ -42,7 +43,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Unable to retrieve next ten of the user's events")
 	}
 
-	calendarEvents := gcal.ParseCalendars(events)
+	calendarEvents := cal.ParseCalendars(events)
 	//
 	app := tview.NewApplication()
 

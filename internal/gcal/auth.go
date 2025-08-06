@@ -54,7 +54,7 @@ func GetClient(config *oauth2.Config) *http.Client {
 		}
 		saveToken(tokFile, tok)
 	} else {
-		log.Debug().Msg("Using existing valid token")
+		//log.Debug().Msg("Using existing valid token")
 	}
 	return config.Client(context.Background(), tok)
 }

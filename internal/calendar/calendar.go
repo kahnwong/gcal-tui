@@ -1,34 +1,14 @@
-package gcal
+package calendar
 
 import (
-	"fmt"
-	"time"
-
-	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
+	"time"
 )
 
 type CalendarEvent struct {
 	Title     string
 	StartTime time.Time
 	EndTime   time.Time
-}
-
-func ListCalendars(srv *calendar.Service) {
-	calendarListCall := srv.CalendarList.List()
-	calendarList, err := calendarListCall.Do()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to retrieve calendar list")
-	}
-
-	if len(calendarList.Items) == 0 {
-		fmt.Println("No calendars found.")
-	} else {
-		fmt.Println("Available Calendar IDs:")
-		for _, item := range calendarList.Items {
-			fmt.Printf("- %s (Summary: %s)\n", item.Id, item.Summary)
-		}
-	}
 }
 
 func ParseCalendars(events *calendar.Events) []CalendarEvent {
