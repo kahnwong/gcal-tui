@@ -28,7 +28,7 @@ func main() {
 	log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	// login
-	oathClientIDJson := gcal.ReadOauthClientIDJSON()
+	oathClientIDJson := gcal.ReadOauthClientID()
 	client := gcal.GetClient(oathClientIDJson)
 
 	ctx := context.Background()

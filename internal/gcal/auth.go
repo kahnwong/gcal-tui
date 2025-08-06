@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func ReadOauthClientIDJSON() *oauth2.Config {
+func ReadOauthClientID() *oauth2.Config {
 	b, err := os.ReadFile(cliBase.ExpandHome(configs.AppConfig.Accounts[0].Credentials)) // [TODO] loop through all accounts
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to read client secret file")
@@ -129,10 +129,3 @@ func refreshToken(config *oauth2.Config, token *oauth2.Token) (*oauth2.Token, er
 	log.Debug().Msg("Successfully refreshed OAuth token")
 	return newToken, nil
 }
-
-// func main() {
-// 	oathClientIDJson := ReadOauthClientIDJSON()
-// 	client := GetClient(oathClientIDJson)
-
-// 	fmt.Println(client)
-// }
