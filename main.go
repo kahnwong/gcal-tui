@@ -23,29 +23,10 @@ func main() {
 		log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
 	}
 
-	// show calendar lists
-	// 3. Call the CalendarList.List() method
-	calendarListCall := srv.CalendarList.List()
-	// You can add optional parameters, e.g., to show hidden calendars:
-	// calendarListCall.ShowHidden(true)
-
-	calendarList, err := calendarListCall.Do()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to retrieve calendar list")
-	}
-
-	// 4. Iterate and print the calendar IDs
-	if len(calendarList.Items) == 0 {
-		fmt.Println("No calendars found.")
-	} else {
-		fmt.Println("Available Calendar IDs:")
-		for _, item := range calendarList.Items {
-			fmt.Printf("- %s (Summary: %s)\n", item.Id, item.Summary)
-		}
-	}
+	//// show calendar lists: run manually because I'm too lazy to expose it
+	//gcal.ListCalendars(srv)
 
 	// show events
-
 	t := time.Now().Format(time.RFC3339)
 	events, err := srv.Events.List("primary").ShowDeleted(false).
 		SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
