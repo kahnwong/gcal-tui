@@ -52,7 +52,8 @@ func main() {
 
 	// Define some sample events
 	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	// Use a fixed date for consistent example output, e.g., Monday, August 4, 2025
+	today := time.Date(2025, time.August, 4, 0, 0, 0, 0, now.Location())
 
 	events := []CalendarEvent{
 		{
@@ -67,13 +68,18 @@ func main() {
 		},
 		{
 			Title:     "Project Review",
-			StartTime: today.Add(24 * time.Hour).Add(14 * time.Hour), // Tomorrow 2 PM
+			StartTime: today.Add(24 * time.Hour).Add(14 * time.Hour), // Tomorrow 2 PM (Tuesday)
 			EndTime:   today.Add(24 * time.Hour).Add(16 * time.Hour),
 		},
 		{
 			Title:     "Client Call",
-			StartTime: today.Add(48 * time.Hour).Add(10 * time.Hour).Add(30 * time.Minute), // Day after tomorrow 10:30 AM
+			StartTime: today.Add(48 * time.Hour).Add(10 * time.Hour).Add(30 * time.Minute), // Day after tomorrow 10:30 AM (Wednesday)
 			EndTime:   today.Add(48 * time.Hour).Add(11 * time.Hour).Add(30 * time.Minute),
+		},
+		{
+			Title:     "GoLang Workshop",
+			StartTime: today.Add(72 * time.Hour).Add(9 * time.Hour), // Thursday 9 AM
+			EndTime:   today.Add(72 * time.Hour).Add(12 * time.Hour),
 		},
 	}
 
@@ -91,11 +97,9 @@ func main() {
 	// Generate columns for each day of the week
 	weekDays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 
-	// Adjust start of week to Monday
-	startOfWeek := today.Add(time.Duration(time.Monday-today.Weekday()) * 24 * time.Hour)
-	if today.Weekday() == time.Sunday { // Handle Sunday case for startOfWeek
-		startOfWeek = today.Add(-6 * 24 * time.Hour)
-	}
+	// Ensure the week starts on Monday for consistent display
+	// 'today' is Monday, August 4, 2025, so startOfWeek will be today
+	startOfWeek := today
 
 	for i, dayName := range weekDays {
 		dayTextView := tview.NewTextView().SetDynamicColors(true)
@@ -107,23 +111,35 @@ func main() {
 		for hour := 0; hour < 24; hour++ {
 			for minute := 0; minute < 60; minute += 30 { // 30-minute intervals
 				slotTime := currentDay.Add(time.Duration(hour)*time.Hour + time.Duration(minute)*time.Minute)
-				isEventSlot := false
+
+				isEventStart := false
+				isEventContinuing := false
 				eventTitle := ""
 
 				for _, event := range events {
-					// Check if the current slot falls within an event's time
-					if (slotTime.Equal(event.StartTime) || slotTime.After(event.StartTime)) && slotTime.Before(event.EndTime) {
-						isEventSlot = true
+					// Check if this slot is the exact start of an event
+					if slotTime.Equal(event.StartTime) {
+						isEventStart = true
 						eventTitle = event.Title
-						break // Found an event for this slot
+						break
+					}
+					// Check if this slot is within an event (but not its start)
+					if slotTime.After(event.StartTime) && slotTime.Before(event.EndTime) {
+						isEventContinuing = true
+						break
 					}
 				}
 
-				if isEventSlot {
-					// Use a background color or specific characters to represent the event
-					fmt.Fprintf(dayTextView, "[white:blue]%s: %02d:%02d %-7s[-:-]\n", dayName[:3], hour, minute, eventTitle) // Fill with blue background
+				eventText := fmt.Sprintf("[white:blue]%s: %02d:%02d %-7s[-:-]\n", dayName[:3], hour, minute, eventTitle)
+				if isEventStart {
+					// Display title only at the start time
+					fmt.Fprintf(dayTextView, eventText)
+				} else if isEventContinuing {
+					// Fill the slot without the title
+					fmt.Fprintf(dayTextView, "[white:blue]   %02d:%02d       [-:-]\n", hour, minute)
 				} else {
-					fmt.Fprintf(dayTextView, "   %02d:%02d       \n", hour, minute) // Empty slot
+					// Empty slot
+					fmt.Fprintf(dayTextView, "       \n")
 				}
 			}
 		}
