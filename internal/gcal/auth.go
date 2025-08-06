@@ -42,12 +42,17 @@ func GetClient(config *oauth2.Config) *http.Client {
 	} else if !tok.Valid() || tok.Expiry.Before(time.Now().Add(5*time.Minute)) {
 		// Token is invalid, expired, or expires within 5 minutes, try to refresh it
 		log.Info().Msg("Token expired or expiring soon, attempting to refresh")
-		tok, err = refreshToken(config, tok)
-		if err != nil {
-			log.Warn().Err(err).Msg("Failed to refresh token, requesting new token from web")
+		if tok.RefreshToken == "" {
+			log.Warn().Msg("No refresh token available, requesting new token from web")
 			tok = getTokenFromWeb(config)
 		} else {
-			log.Info().Msg("Token refreshed successfully")
+			tok, err = refreshToken(config, tok)
+			if err != nil {
+				log.Warn().Err(err).Msg("Failed to refresh token, requesting new token from web")
+				tok = getTokenFromWeb(config)
+			} else {
+				log.Info().Msg("Token refreshed successfully")
+			}
 		}
 		saveToken(tokFile, tok)
 	} else {
@@ -73,7 +78,7 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 }
 
 func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 	fmt.Printf("Go to the following link in your browser then type the "+
 		"authorization code: \n%v\n", authURL)
 
@@ -109,7 +114,7 @@ func saveToken(path string, token *oauth2.Token) {
 
 func refreshToken(config *oauth2.Config, token *oauth2.Token) (*oauth2.Token, error) {
 	if token.RefreshToken == "" {
-		return nil, fmt.Errorf("no refresh token available")
+		return nil, fmt.Errorf("no refresh token available - please re-authenticate to grant offline access")
 	}
 
 	tokenSource := config.TokenSource(context.Background(), token)
