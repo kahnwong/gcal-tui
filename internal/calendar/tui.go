@@ -19,6 +19,7 @@ var dayViews []*tview.TextView
 var flex *tview.Flex
 var timeScale *tview.TextView
 var mainFlex *tview.Flex
+var statusBarText = "[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]q[yellow]=Exit"
 
 func RenderTUI(events []CalendarEvent) {
 	app := tview.NewApplication()
@@ -145,10 +146,6 @@ func RenderTUI(events []CalendarEvent) {
 					rebuildLayout()
 				}
 				return nil
-			case 'r':
-				// Refresh and recalculate terminal size
-				handleResize()
-				return nil
 			case 'q':
 				// Exit the application
 				cancel() // Cancel the resize detection goroutine
@@ -197,7 +194,7 @@ func RenderTUI(events []CalendarEvent) {
 	mainFlex.AddItem(flex, 0, 1, true)
 
 	statusText := tview.NewTextView().SetDynamicColors(true)
-	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]r[yellow]=Manual Refresh, [white]q[yellow]=Exit")
+	statusText.SetText(statusBarText)
 	statusText.SetTextAlign(tview.AlignCenter)
 	mainFlex.AddItem(statusText, 1, 1, false)
 
@@ -244,7 +241,7 @@ func rebuildLayout() {
 
 		// Add status bar
 		statusText := tview.NewTextView().SetDynamicColors(true)
-		statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]h[yellow]=Scroll Left, [white]l[yellow]=Scroll Right, [white]r[yellow]=Manual Refresh, [white]q[yellow]=Exit")
+		statusText.SetText(statusBarText)
 		statusText.SetTextAlign(tview.AlignCenter)
 		mainFlex.AddItem(statusText, 1, 1, false)
 	}
