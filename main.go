@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/kahnwong/gcal-tui/internal/gcal"
+	_ "github.com/kahnwong/gcal-tui/internal/logger"
+	"github.com/rs/zerolog/log"
 
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
@@ -19,7 +20,7 @@ func main() {
 	ctx := context.Background()
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		log.Fatalf("Unable to retrieve Calendar client: %v", err)
+		log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
 	}
 
 	// show calendar lists
@@ -30,7 +31,7 @@ func main() {
 
 	calendarList, err := calendarListCall.Do()
 	if err != nil {
-		log.Fatalf("Unable to retrieve calendar list: %v", err)
+		log.Fatal().Err(err).Msg("Unable to retrieve calendar list")
 	}
 
 	// 4. Iterate and print the calendar IDs
@@ -49,7 +50,7 @@ func main() {
 	events, err := srv.Events.List("primary").ShowDeleted(false).
 		SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
 	if err != nil {
-		log.Fatalf("Unable to retrieve next ten of the user's events: %v", err)
+		log.Fatal().Err(err).Msg("Unable to retrieve next ten of the user's events")
 	}
 	fmt.Println("Upcoming events:")
 	if len(events.Items) == 0 {
