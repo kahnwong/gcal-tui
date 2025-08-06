@@ -7,6 +7,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/kahnwong/gcal-tui/internal/gcal"
+	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
@@ -36,9 +37,10 @@ func main() {
 	//
 	// show events
 	var calendarEvents []CalendarEvent
-	t := time.Now().Format(time.RFC3339)
+	//t := time.Now().Format(time.RFC3339)
+	currentMonday, upcomingMonday := utils.GenerateStartAndEndOfWeekTime()
 	events, err := srv.Events.List("primary").ShowDeleted(false).
-		SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
+		SingleEvents(true).TimeMin(currentMonday.Format(time.RFC3339)).TimeMax(upcomingMonday.Format(time.RFC3339)).MaxResults(10).OrderBy("startTime").Do()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to retrieve next ten of the user's events")
 	}
