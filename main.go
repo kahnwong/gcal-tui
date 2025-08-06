@@ -98,25 +98,17 @@ func main() {
 	// Use a fixed date for consistent example output, e.g., Monday, August 4, 2025
 	today := time.Date(2025, time.August, 4, 0, 0, 0, 0, now.Location())
 
-	// Create the main flex layout for the week view
-	flex := tview.NewFlex()
-
-	// Add time scale column
-	timeScale := tview.NewTextView().SetDynamicColors(true)
-	timeScale.SetBorder(true).SetTitle("Time")
-	for i := 0; i < 24; i++ {
-		fmt.Fprintf(timeScale, "%02d:00\n\n", i) // Display every hour, leave space for minutes
-	}
-	flex.AddItem(timeScale, 8, 1, false) // Fixed width for time scale
-
 	// Generate columns for each day of the week
 	weekDays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 	var dayViews []*tview.TextView
+	var currentOffset int = 0  // Track horizontal scroll position
+	var maxVisibleDays int = 4 // Default number of visible days
 
 	// Ensure the week starts on Monday for consistent display
 	// 'today' is Monday, August 4, 2025, so startOfWeek will be today
 	startOfWeek := today
 
+	// Create all day views (but don't add to flex yet)
 	for i, dayName := range weekDays {
 		dayTextView := tview.NewTextView().SetDynamicColors(true)
 		dayTextView.SetBorder(true).SetTitle(dayName)
@@ -166,58 +158,137 @@ func main() {
 				}
 			}
 		}
-		flex.AddItem(dayTextView, 25, 1, false) // Each day takes equal flexible width
 	}
+
+	// Function to rebuild the flex layout based on current offset
+	var flex *tview.Flex
+	var timeScale *tview.TextView
+	var mainFlex *tview.Flex
+
+	rebuildLayout := func() {
+		flex = tview.NewFlex()
+
+		// Add time scale column
+		timeScale = tview.NewTextView().SetDynamicColors(true)
+		timeScale.SetBorder(true).SetTitle("Time")
+		for i := 0; i < 24; i++ {
+			fmt.Fprintf(timeScale, "%02d:00\n\n", i) // Display every hour, leave space for minutes
+		}
+		flex.AddItem(timeScale, 8, 1, false) // Fixed width for time scale
+
+		// Add visible day columns based on current offset
+		for i := 0; i < maxVisibleDays && (currentOffset+i) < len(dayViews); i++ {
+			dayIndex := currentOffset + i
+			flex.AddItem(dayViews[dayIndex], 25, 1, false)
+		}
+
+		// Update the main layout if it exists
+		if mainFlex != nil {
+			mainFlex.Clear()
+			mainFlex.AddItem(flex, 0, 1, true)
+
+			// Add status bar
+			statusText := tview.NewTextView().SetDynamicColors(true)
+			statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]h[yellow]=Scroll Left, [white]l[yellow]=Scroll Right, [white]Esc[yellow]=Exit")
+			statusText.SetTextAlign(tview.AlignCenter)
+			mainFlex.AddItem(statusText, 1, 1, false)
+		}
+	}
+
+	// Initial layout build
+	rebuildLayout()
 
 	// Add input handler for scrolling
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlF:
-			// Scroll down all views
-			for _, dayView := range dayViews {
-				row, _ := dayView.GetScrollOffset()
-				dayView.ScrollTo(row+5, 0) // Scroll down by 5 lines
+			// Scroll down all currently visible views
+			for i := 0; i < maxVisibleDays && (currentOffset+i) < len(dayViews); i++ {
+				dayIndex := currentOffset + i
+				row, _ := dayViews[dayIndex].GetScrollOffset()
+				dayViews[dayIndex].ScrollTo(row+5, 0) // Scroll down by 5 lines
 			}
 			// Also scroll the time scale
-			timeRow, _ := timeScale.GetScrollOffset()
-			timeScale.ScrollTo(timeRow+5, 0)
+			if timeScale != nil {
+				timeRow, _ := timeScale.GetScrollOffset()
+				timeScale.ScrollTo(timeRow+5, 0)
+			}
 			return nil
 		case tcell.KeyCtrlB:
-			// Scroll up all views (bonus feature)
-			for _, dayView := range dayViews {
-				row, _ := dayView.GetScrollOffset()
+			// Scroll up all currently visible views (bonus feature)
+			for i := 0; i < maxVisibleDays && (currentOffset+i) < len(dayViews); i++ {
+				dayIndex := currentOffset + i
+				row, _ := dayViews[dayIndex].GetScrollOffset()
 				if row >= 5 {
-					dayView.ScrollTo(row-5, 0) // Scroll up by 5 lines
+					dayViews[dayIndex].ScrollTo(row-5, 0) // Scroll up by 5 lines
 				} else {
-					dayView.ScrollTo(0, 0) // Scroll to top
+					dayViews[dayIndex].ScrollTo(0, 0) // Scroll to top
 				}
 			}
 			// Also scroll the time scale up
-			timeRow, _ := timeScale.GetScrollOffset()
-			if timeRow >= 5 {
-				timeScale.ScrollTo(timeRow-5, 0)
-			} else {
-				timeScale.ScrollTo(0, 0)
+			if timeScale != nil {
+				timeRow, _ := timeScale.GetScrollOffset()
+				if timeRow >= 5 {
+					timeScale.ScrollTo(timeRow-5, 0)
+				} else {
+					timeScale.ScrollTo(0, 0)
+				}
 			}
 			return nil
+		case tcell.KeyEsc:
+			// Exit the application
+			app.Stop()
+			return nil
 		case tcell.KeyRune:
-			if event.Rune() == 'q' {
-				// Exit the application
-				app.Stop()
+			// Handle character keys for horizontal scrolling
+			switch event.Rune() {
+			case 'h':
+				// Scroll left (show previous day columns)
+				if currentOffset > 0 {
+					currentOffset--
+					rebuildLayout()
+				}
+				return nil
+			case 'l':
+				// Scroll right (show next day columns)
+				if currentOffset+maxVisibleDays < len(dayViews) {
+					currentOffset++
+					rebuildLayout()
+				}
+				return nil
+			case '+':
+				// Increase visible days (up to 7)
+				if maxVisibleDays < 7 {
+					maxVisibleDays++
+					rebuildLayout()
+				}
+				return nil
+			case '-':
+				// Decrease visible days (minimum 1)
+				if maxVisibleDays > 1 {
+					maxVisibleDays--
+					// Adjust offset if needed
+					if currentOffset+maxVisibleDays > len(dayViews) {
+						currentOffset = len(dayViews) - maxVisibleDays
+						if currentOffset < 0 {
+							currentOffset = 0
+						}
+					}
+					rebuildLayout()
+				}
 				return nil
 			}
 		}
 		return event
 	})
 
-	// Add a status bar to show available key bindings
-	statusText := tview.NewTextView().SetDynamicColors(true)
-	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]Q[yellow]=Exit")
-	statusText.SetTextAlign(tview.AlignCenter)
-
 	// Create main layout with status bar at the bottom
-	mainFlex := tview.NewFlex().SetDirection(tview.FlexRow)
+	mainFlex = tview.NewFlex().SetDirection(tview.FlexRow)
 	mainFlex.AddItem(flex, 0, 1, true)
+
+	statusText := tview.NewTextView().SetDynamicColors(true)
+	statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]+/-[yellow]=Resize, [white]Esc[yellow]=Exit")
+	statusText.SetTextAlign(tview.AlignCenter)
 	mainFlex.AddItem(statusText, 1, 1, false)
 
 	if err := app.SetRoot(mainFlex, true).Run(); err != nil {
