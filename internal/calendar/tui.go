@@ -163,54 +163,9 @@ func RenderTUI(events []CalendarEvent) {
 	}
 }
 
-func periodicResize(ctx context.Context, app *tview.Application) {
-	// Set up periodic resize checking with context for proper cleanup
-	go func() { // don't remove `go func`
-		var lastWidth int
-
-		// Get initial terminal size
-		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-			lastWidth = w
-		}
-
-		// Check for size changes every 250ms for more responsive resizing
-		ticker := time.NewTicker(250 * time.Millisecond)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-					// Only trigger resize handling for horizontal changes
-					// since vertical changes are handled automatically by tview
-					if w != lastWidth {
-						lastWidth = w
-						app.QueueUpdateDraw(func() {
-							handleResize()
-						})
-					}
-				}
-			}
-		}
-	}()
-}
-
-func setStatusBar() {
-	// Create main layout with status bar at the bottom
-	mainFlex = tview.NewFlex().SetDirection(tview.FlexRow)
-	mainFlex.AddItem(flex, 0, 1, true)
-
-	statusText := tview.NewTextView().SetDynamicColors(true)
-	statusText.SetText(statusBarText)
-	statusText.SetTextAlign(tview.AlignCenter)
-	mainFlex.AddItem(statusText, 1, 1, false)
-}
-
 func getMaxVisibleDays() int {
 	// Calculate initial number of visible days based on terminal width
-	var maxVisibleDays int = 7 // Default to show all days
+	maxVisibleDays = 7 // Default to show all days
 	if termWidth, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
 		// Each day column needs ~25 chars, time scale needs 8 chars
 		availableWidth := termWidth - 8
@@ -268,4 +223,49 @@ func handleResize() {
 			rebuildLayout()
 		}
 	}
+}
+
+func periodicResize(ctx context.Context, app *tview.Application) {
+	// Set up periodic resize checking with context for proper cleanup
+	go func() { // don't remove `go func`
+		var lastWidth int
+
+		// Get initial terminal size
+		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+			lastWidth = w
+		}
+
+		// Check for size changes every 250ms for more responsive resizing
+		ticker := time.NewTicker(250 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+					// Only trigger resize handling for horizontal changes
+					// since vertical changes are handled automatically by tview
+					if w != lastWidth {
+						lastWidth = w
+						app.QueueUpdateDraw(func() {
+							handleResize()
+						})
+					}
+				}
+			}
+		}
+	}()
+}
+
+func setStatusBar() {
+	// Create main layout with status bar at the bottom
+	mainFlex = tview.NewFlex().SetDirection(tview.FlexRow)
+	mainFlex.AddItem(flex, 0, 1, true)
+
+	statusText := tview.NewTextView().SetDynamicColors(true)
+	statusText.SetText(statusBarText)
+	statusText.SetTextAlign(tview.AlignCenter)
+	mainFlex.AddItem(statusText, 1, 1, false)
 }
