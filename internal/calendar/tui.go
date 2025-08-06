@@ -12,14 +12,18 @@ import (
 )
 
 var currentOffset int = 0 // Track horizontal scroll position
+var maxVisibleDays int
+var dayViews []*tview.TextView
+var flex *tview.Flex
+var timeScale *tview.TextView
+var mainFlex *tview.Flex
 
 func RenderTUI(events []CalendarEvent) {
 	app := tview.NewApplication()
 
 	weekDays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
-	var dayViews []*tview.TextView
 
-	maxVisibleDays := getMaxVisibleDays()
+	maxVisibleDays = getMaxVisibleDays()
 
 	// Ensure the week starts on Monday for consistent display
 	startOfWeek, _ := utils.GenerateStartAndEndOfWeekTime()
@@ -77,39 +81,6 @@ func RenderTUI(events []CalendarEvent) {
 	}
 
 	// Function to rebuild the flex layout based on current offset
-	var flex *tview.Flex
-	var timeScale *tview.TextView
-	var mainFlex *tview.Flex
-
-	rebuildLayout := func() {
-		flex = tview.NewFlex()
-
-		// Add time scale column
-		timeScale = tview.NewTextView().SetDynamicColors(true)
-		timeScale.SetBorder(true).SetTitle("Time")
-		for i := 0; i < 24; i++ {
-			fmt.Fprintf(timeScale, "%02d:00\n\n", i) // Display every hour, leave space for minutes
-		}
-		flex.AddItem(timeScale, 8, 1, false) // Fixed width for time scale
-
-		// Add visible day columns based on current offset
-		for i := 0; i < maxVisibleDays && (currentOffset+i) < len(dayViews); i++ {
-			dayIndex := currentOffset + i
-			flex.AddItem(dayViews[dayIndex], 25, 1, false)
-		}
-
-		// Update the main layout if it exists
-		if mainFlex != nil {
-			mainFlex.Clear()
-			mainFlex.AddItem(flex, 0, 1, true)
-
-			// Add status bar
-			statusText := tview.NewTextView().SetDynamicColors(true)
-			statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]h[yellow]=Scroll Left, [white]l[yellow]=Scroll Right, [white]Esc[yellow]=Exit")
-			statusText.SetTextAlign(tview.AlignCenter)
-			mainFlex.AddItem(statusText, 1, 1, false)
-		}
-	}
 
 	// Initial layout build
 	rebuildLayout()
@@ -222,4 +193,34 @@ func getMaxVisibleDays() int {
 		}
 	}
 	return maxVisibleDays
+}
+
+func rebuildLayout() {
+	flex = tview.NewFlex()
+
+	// Add time scale column
+	timeScale = tview.NewTextView().SetDynamicColors(true)
+	timeScale.SetBorder(true).SetTitle("Time")
+	for i := 0; i < 24; i++ {
+		fmt.Fprintf(timeScale, "%02d:00\n\n", i) // Display every hour, leave space for minutes
+	}
+	flex.AddItem(timeScale, 8, 1, false) // Fixed width for time scale
+
+	// Add visible day columns based on current offset
+	for i := 0; i < maxVisibleDays && (currentOffset+i) < len(dayViews); i++ {
+		dayIndex := currentOffset + i
+		flex.AddItem(dayViews[dayIndex], 25, 1, false)
+	}
+
+	// Update the main layout if it exists
+	if mainFlex != nil {
+		mainFlex.Clear()
+		mainFlex.AddItem(flex, 0, 1, true)
+
+		// Add status bar
+		statusText := tview.NewTextView().SetDynamicColors(true)
+		statusText.SetText("[yellow]Keys: [white]Ctrl+F[yellow]=Scroll Down, [white]Ctrl+B[yellow]=Scroll Up, [white]h[yellow]=Scroll Left, [white]l[yellow]=Scroll Right, [white]Esc[yellow]=Exit")
+		statusText.SetTextAlign(tview.AlignCenter)
+		mainFlex.AddItem(statusText, 1, 1, false)
+	}
 }
