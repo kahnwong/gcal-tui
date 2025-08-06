@@ -4,6 +4,7 @@ go 1.24.3
 
 require (
 	github.com/kahnwong/cli-base v0.0.0-20250806100710-60d4c6902dd9
+	github.com/rivo/tview v0.0.0-20250625164341-a4a78f1e05cb
 	github.com/rs/zerolog v1.34.0
 	golang.org/x/oauth2 v0.30.0
 	google.golang.org/api v0.245.0
@@ -26,7 +27,6 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/rivo/tview v0.0.0-20250625164341-a4a78f1e05cb // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect

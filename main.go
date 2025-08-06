@@ -8,7 +8,7 @@ import (
 	_ "github.com/kahnwong/gcal-tui/internal/logger"
 )
 
-type Event struct {
+type CalendarEvent struct {
 	Title     string
 	StartTime time.Time
 	EndTime   time.Time
@@ -48,144 +48,89 @@ func main() {
 	//}
 
 	//
-
 	app := tview.NewApplication()
-	textView := tview.NewTextView()
-	textView.SetDynamicColors(true)
-	textView.SetRegions(true)
-	textView.SetWrap(false)
 
-	// Define a slice of events for a single day (e.g., today).
-	today := time.Now().Truncate(24 * time.Hour) // Get the start of today
-	events := []Event{
+	// Define some sample events
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	events := []CalendarEvent{
 		{
-			Title:     "Daily Standup",
+			Title:     "Team Meeting",
 			StartTime: today.Add(9 * time.Hour),
-			EndTime:   today.Add(9*time.Hour + 30*time.Minute),
-		},
-		{
-			Title:     "Project Meeting",
-			StartTime: today.Add(11 * time.Hour),
-			EndTime:   today.Add(12 * time.Hour),
+			EndTime:   today.Add(10 * time.Hour),
 		},
 		{
 			Title:     "Lunch Break",
-			StartTime: today.Add(12*time.Hour + 30*time.Minute),
-			EndTime:   today.Add(13*time.Hour + 30*time.Minute),
+			StartTime: today.Add(12 * time.Hour).Add(30 * time.Minute),
+			EndTime:   today.Add(13 * time.Hour),
 		},
 		{
-			Title:     "Coding Session",
-			StartTime: today.Add(14 * time.Hour),
-			EndTime:   today.Add(17 * time.Hour),
+			Title:     "Project Review",
+			StartTime: today.Add(24 * time.Hour).Add(14 * time.Hour), // Tomorrow 2 PM
+			EndTime:   today.Add(24 * time.Hour).Add(16 * time.Hour),
+		},
+		{
+			Title:     "Client Call",
+			StartTime: today.Add(48 * time.Hour).Add(10 * time.Hour).Add(30 * time.Minute), // Day after tomorrow 10:30 AM
+			EndTime:   today.Add(48 * time.Hour).Add(11 * time.Hour).Add(30 * time.Minute),
 		},
 	}
 
-	// Constants for display
-	const totalHours = 24
-	const rowsPerHour = 4 // 4 rows per hour (15-minute intervals)
-	const totalRows = totalHours * rowsPerHour
-	const colWidth = 40 // Width of the calendar view
+	// Create the main flex layout for the week view
+	flex := tview.NewFlex()
 
-	// Generate the calendar view
-	calendarContent := generateCalendarView(events, today, totalRows, colWidth, rowsPerHour)
-	textView.SetText(calendarContent)
-
-	if err := app.SetRoot(textView, true).Run(); err != nil {
-		panic(err)
+	// Add time scale column
+	timeScale := tview.NewTextView().SetDynamicColors(true)
+	timeScale.SetBorder(true).SetTitle("Time")
+	for i := 0; i < 24; i++ {
+		fmt.Fprintf(timeScale, "%02d:00\n\n", i) // Display every hour, leave space for minutes
 	}
-}
+	flex.AddItem(timeScale, 8, 1, false) // Fixed width for time scale
 
-// generateCalendarView creates the string representation of the day's calendar.
-func generateCalendarView(events []Event, day time.Time, totalRows, colWidth, rowsPerHour int) string {
-	//var builder tview.ANSIWriter // Use ANSIWriter for color codes if not using SetDynamicColors(true)
-	// Or simply use strings.Builder and raw ANSI codes if not relying on tview's dynamic colors for regions
-	// For simplicity with tview.TextView and its dynamic colors, we'll build the string directly.
+	// Generate columns for each day of the week
+	weekDays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 
-	// Initialize a 2D array to represent the screen cells for the day
-	// Each cell will hold a character to be printed.
-	screen := make([][]rune, totalRows)
-	for i := range screen {
-		screen[i] = make([]rune, colWidth)
-		for j := range screen[i] {
-			if j == 0 || j == colWidth-1 || j == 7 { // Vertical line for time and event separation
-				screen[i][j] = '|'
-			} else {
-				screen[i][j] = ' '
-			}
-		}
+	// Adjust start of week to Monday
+	startOfWeek := today.Add(time.Duration(time.Monday-today.Weekday()) * 24 * time.Hour)
+	if today.Weekday() == time.Sunday { // Handle Sunday case for startOfWeek
+		startOfWeek = today.Add(-6 * 24 * time.Hour)
 	}
 
-	// Populate time labels
-	for h := 0; h < 24; h++ {
-		timeStr := fmt.Sprintf("%02d:00", h)
-		row := h * rowsPerHour
-		for i, r := range timeStr {
-			if row < totalRows && i < colWidth {
-				screen[row][i] = r
-			}
-		}
-	}
+	for i, dayName := range weekDays {
+		dayTextView := tview.NewTextView().SetDynamicColors(true)
+		dayTextView.SetBorder(true).SetTitle(dayName)
 
-	// Fill events
-	for _, event := range events {
-		// Calculate start and end rows for the event
-		startOfDay := day
-		eventStartMinutes := float64(event.StartTime.Sub(startOfDay).Minutes())
-		eventEndMinutes := float64(event.EndTime.Sub(startOfDay).Minutes())
+		currentDay := startOfWeek.Add(time.Duration(i) * 24 * time.Hour)
 
-		startRow := int(eventStartMinutes / (60.0 / float64(rowsPerHour)))
-		endRow := int(eventEndMinutes / (60.0 / float64(rowsPerHour)))
+		// Populate day view with time slots
+		for hour := 0; hour < 24; hour++ {
+			for minute := 0; minute < 60; minute += 30 { // 30-minute intervals
+				slotTime := currentDay.Add(time.Duration(hour)*time.Hour + time.Duration(minute)*time.Minute)
+				isEventSlot := false
+				eventTitle := ""
 
-		// Ensure rows are within bounds
-		if startRow < 0 {
-			startRow = 0
-		}
-		if endRow > totalRows {
-			endRow = totalRows
-		}
-		if startRow >= totalRows || endRow <= 0 || startRow >= endRow {
-			continue // Event is outside the displayable day or invalid
-		}
-
-		// Fill the rectangle for the event
-		for r := startRow; r < endRow; r++ {
-			if r < totalRows {
-				// Fill with a background color and print title if at the start
-				fillChar := '█' // Unicode block character for solid fill
-				// You could also use ANSI escape codes directly for background color
-				// For simplicity with tview's SetDynamicColors, we'll use a specific char and then let tview color it.
-				// A more advanced approach would involve tcell primitives or custom drawing.
-
-				// Print the title on the first row of the event, centered or at a fixed position
-				eventTitle := fmt.Sprintf(" %s ", event.Title) // Add spaces for padding
-				if r == startRow {
-					// Clear the space for the title first
-					for c := 8; c < colWidth-1; c++ {
-						screen[r][c] = fillChar
+				for _, event := range events {
+					// Check if the current slot falls within an event's time
+					if (slotTime.Equal(event.StartTime) || slotTime.After(event.StartTime)) && slotTime.Before(event.EndTime) {
+						isEventSlot = true
+						eventTitle = event.Title
+						break // Found an event for this slot
 					}
-					// Place title
-					titleStartCol := 8 + (colWidth-8-len(eventTitle))/2 // Center in the event column
-					if titleStartCol < 8 {
-						titleStartCol = 8
-					}
-					for i, char := range eventTitle {
-						if titleStartCol+i < colWidth-1 {
-							screen[r][titleStartCol+i] = char
-						}
-					}
+				}
+
+				if isEventSlot {
+					// Use a background color or specific characters to represent the event
+					fmt.Fprintf(dayTextView, "[white:blue]%s: %02d:%02d %-7s[-:-]\n", dayName[:3], hour, minute, eventTitle) // Fill with blue background
 				} else {
-					for c := 8; c < colWidth-1; c++ {
-						screen[r][c] = fillChar
-					}
+					fmt.Fprintf(dayTextView, "   %02d:%02d       \n", hour, minute) // Empty slot
 				}
 			}
 		}
+		flex.AddItem(dayTextView, 0, 1, false) // Each day takes equal flexible width
 	}
 
-	// Build the final string
-	var output string
-	for r := 0; r < totalRows; r++ {
-		output += string(screen[r]) + "\n"
+	if err := app.SetRoot(flex, true).Run(); err != nil {
+		panic(err)
 	}
-	return output
 }
