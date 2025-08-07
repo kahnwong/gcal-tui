@@ -1,6 +1,7 @@
 package calendar
 
 import (
+	"sync"
 	"time"
 
 	cliBase "github.com/kahnwong/cli-base"
@@ -72,16 +73,39 @@ func ParseCalendars(color string, events *calendar.Events) []CalendarEvent {
 
 func FetchAllEvents(dayAdjustment int) []CalendarEvent {
 	var allEvents []CalendarEvent
+
+	resultsCh := make(chan []CalendarEvent, 100) // Buffer size can be tuned
+
+	var accountsWg sync.WaitGroup
+
 	for _, c := range configs.AppConfig.Accounts {
-		oathClientIDJson := gcal.ReadOauthClientID(cliBase.ExpandHome(c.Credentials))
-		client := gcal.GetClient(c.Name, oathClientIDJson)
+		accountsWg.Add(1)
+		go func(account configs.Account) {
+			defer accountsWg.Done()
+			oathClientIDJson := gcal.ReadOauthClientID(cliBase.ExpandHome(account.Credentials))
+			client := gcal.GetClient(account.Name, oathClientIDJson)
 
-		for _, calendarInfo := range c.Calendars {
-			events := gcal.GetEvents(dayAdjustment, calendarInfo.Id, client)
-			calendarEvents := ParseCalendars(calendarInfo.Color, events)
+			var calendarsWg sync.WaitGroup
+			for _, calendarInfo := range account.Calendars {
+				calendarsWg.Add(1)
+				go func(calInfo configs.Calendar) {
+					defer calendarsWg.Done()
+					events := gcal.GetEvents(dayAdjustment, calInfo.Id, client)
+					calendarEvents := ParseCalendars(calInfo.Color, events)
+					resultsCh <- calendarEvents
+				}(calendarInfo)
+			}
+			calendarsWg.Wait()
+		}(c)
+	}
 
-			allEvents = append(allEvents, calendarEvents...)
-		}
+	go func() {
+		accountsWg.Wait()
+		close(resultsCh)
+	}()
+
+	for events := range resultsCh {
+		allEvents = append(allEvents, events...)
 	}
 
 	return allEvents

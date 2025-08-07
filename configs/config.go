@@ -10,12 +10,14 @@ type Calendar struct {
 	Id    string `yaml:"id"`
 	Color string `yaml:"color"`
 }
+
+type Account struct {
+	Name        string     `yaml:"name"`
+	Credentials string     `yaml:"credentials"`
+	Calendars   []Calendar `yaml:"calendars"`
+}
 type Config struct {
-	Accounts []struct {
-		Name        string     `yaml:"name"`
-		Credentials string     `yaml:"credentials"`
-		Calendars   []Calendar `yaml:"calendars"`
-	} `yaml:"accounts"`
+	Accounts []Account `yaml:"accounts"`
 }
 
 var AppConfigBasePath = cliBase.ExpandHome("~/.config/gcal-tui")
