@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -18,11 +19,13 @@ import (
 var (
 	currentOffset  int = 0 // Track horizontal scroll position
 	maxVisibleDays int
-	dayViews       []*tview.TextView
-	flex           *tview.Flex
-	timeScale      *tview.TextView
-	mainFlex       *tview.Flex
-	statusBarText  = "[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]q[yellow]=Exit"
+	eventPadding   = 23 // Event display padding width
+
+	dayViews      []*tview.TextView
+	flex          *tview.Flex
+	timeScale     *tview.TextView
+	mainFlex      *tview.Flex
+	statusBarText = "[yellow]Keys: [white]Ctrl+F[yellow]=Down, [white]Ctrl+B[yellow]=Up, [white]h[yellow]=Left, [white]l[yellow]=Right, [white]q[yellow]=Exit"
 )
 
 func RenderTUI(dayAdjustment int, events []CalendarEvent) {
@@ -46,8 +49,6 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 		EndTime:   time.Now().Add(30 * time.Minute),
 		Color:     "red",
 	})
-
-	const eventPadding = 23 // Event display padding width
 
 	// Create all day views (but don't add to flex yet)
 	for i, dayName := range weekDaysWithDate {
@@ -88,8 +89,13 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 				}
 
 				if isEventStart {
+					eventStartPadding := eventPadding
 					// fill with title
-					formatString := fmt.Sprintf("[black:%s]%%-%ds[-:-]\n", eventColor, eventPadding)
+					if strings.Contains(eventTitle, "[") {
+						eventStartPadding += 1
+					}
+					formatString := fmt.Sprintf("[black:%s]%%-%ds[-:-]\n", eventColor, eventStartPadding)
+
 					_, err := fmt.Fprintf(dayTextView, formatString, eventTitle)
 					if err != nil {
 						log.Error().Err(err).Msg("failed to write event start fill")
