@@ -3,9 +3,8 @@ package calendar
 
 import (
 	"context"
+	"fmt"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -67,10 +66,10 @@ func RenderTUI(events []CalendarEvent) {
 					if len(title) > 23 {
 						title = title[:23]
 					}
-					dayTextView.Write([]byte("[white:blue]" + title + strings.Repeat(" ", 23-len(title)) + "[-:-]\n"))
+					dayTextView.Write([]byte(fmt.Sprintf("[white:blue]%-23s[-:-]\n", title)))
 				} else if isEventContinuing {
 					// fill without title
-					dayTextView.Write([]byte("[white:blue]                       [-:-]\n")) // 23 whitespace
+					dayTextView.Write([]byte(fmt.Sprintf("[white:blue]%23s[-:-]\n", "")))
 				} else {
 					// Empty slot
 					dayTextView.Write([]byte("       \n"))
@@ -181,7 +180,7 @@ func rebuildLayout() {
 	timeScale = tview.NewTextView().SetDynamicColors(true)
 	timeScale.SetBorder(true).SetTitle("Time")
 	for i := 0; i < 24; i++ {
-		timeScale.Write([]byte(strconv.Itoa(i/10) + strconv.Itoa(i%10) + ":00\n\n"))
+		timeScale.Write([]byte(fmt.Sprintf("%02d:00\n\n", i)))
 	}
 	flex.AddItem(timeScale, 8, 1, false) // Fixed width for time scale
 
