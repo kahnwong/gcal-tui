@@ -39,6 +39,14 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 		weekDaysWithDate[i] = fmt.Sprintf(" %s - %s ", day, dateString)
 	}
 
+	// add marker for current time
+	events = append(events, CalendarEvent{
+		Title:     "",
+		StartTime: time.Now(),
+		EndTime:   time.Now().Add(30 * time.Minute),
+		Color:     "red",
+	})
+
 	const eventPadding = 23 // Event display padding width
 
 	// Create all day views (but don't add to flex yet)
