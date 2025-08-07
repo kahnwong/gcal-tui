@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/rs/zerolog/log"
 
@@ -94,6 +95,17 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 					if strings.Contains(eventTitle, "[") {
 						eventStartPadding += 1
 					}
+
+					if ContainsEmoji(eventTitle) {
+						emojiChars := CountEmojiChars(eventTitle)
+						switch emojiChars {
+						case 1:
+							eventStartPadding -= 1
+						case 2:
+							eventStartPadding += 2
+						}
+					}
+
 					formatString := fmt.Sprintf("[black:%s]%%-%ds[-:-]\n", eventColor, eventStartPadding)
 
 					_, err := fmt.Fprintf(dayTextView, formatString, eventTitle)
@@ -307,4 +319,50 @@ func setStatusBar() {
 	statusText.SetText(statusBarText)
 	statusText.SetTextAlign(tview.AlignCenter)
 	mainFlex.AddItem(statusText, 1, 1, false)
+}
+
+func isEmoji(r rune) bool {
+	return (r >= 0x1F600 && r <= 0x1F64F) || // Emoticons
+		(r >= 0x1F300 && r <= 0x1F5FF) || // Misc Symbols and Pictographs
+		(r >= 0x1F680 && r <= 0x1F6FF) || // Transport and Map
+		(r >= 0x1F1E6 && r <= 0x1F1FF) || // Regional Indicator Symbols
+		(r >= 0x2600 && r <= 0x26FF) || // Misc Symbols
+		(r >= 0x2700 && r <= 0x27BF) || // Dingbats
+		(r >= 0x1F900 && r <= 0x1F9FF) || // Supplemental Symbols and Pictographs
+		(r >= 0x1FA00 && r <= 0x1FAFF) || // Chess Symbols + Extended-A
+		(r >= 0x1F004 && r <= 0x1F0CF) || // Playing cards, Mahjong
+		(r >= 0x1F170 && r <= 0x1F251) // Enclosed characters
+}
+
+func ContainsEmoji(s string) bool {
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if size == 0 {
+			break
+		}
+		if isEmoji(r) {
+			return true
+		}
+		i += size
+	}
+	return false
+}
+
+func CountEmojiChars(s string) int {
+	count := 0
+
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if size == 0 {
+			break
+		}
+
+		if isEmoji(r) {
+			count++
+		}
+
+		i += size
+	}
+
+	return count
 }
