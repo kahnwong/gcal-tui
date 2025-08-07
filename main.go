@@ -22,4 +22,6 @@ func main() {
 		}
 	}
 	events = calendar.FetchAllEvents(dayAdjustment)
+
+	calendar.RenderTUI(dayAdjustment, events)
 }
