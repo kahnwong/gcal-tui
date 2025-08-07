@@ -61,18 +61,12 @@ func RenderTUI(events []CalendarEvent) {
 				}
 
 				if isEventStart {
-					// Calculate the length of the eventTitle
-					paddingValue := 23 //- len(eventTitle)
-
-					// Construct the format string dynamically
-					formatString := fmt.Sprintf("[white:blue]%%-%ds[-:-]\n", paddingValue)
-
-					// Use the dynamically created format string with Fprintf
+					// fill with title
+					formatString := fmt.Sprintf("[white:blue]%%-%ds[-:-]\n", 23) // 23 whitespace
 					fmt.Fprintf(dayTextView, formatString, eventTitle)
-					//fmt.Fprintf(dayTextView, "[white:blue]%-7s[-:-]\n", eventTitle)
 				} else if isEventContinuing {
-					// Fill the slot without the title
-					fmt.Fprintf(dayTextView, "[white:blue]                       [-:-]\n")
+					// fill without title
+					fmt.Fprintf(dayTextView, "[white:blue]                       [-:-]\n") // 23 whitespace
 				} else {
 					// Empty slot
 					fmt.Fprintf(dayTextView, "       \n")

@@ -36,7 +36,7 @@ func GetEvents(calendarId string, client *http.Client) *calendar.Events {
 		log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
 	}
 
-	//// show calendar lists: run manually because I'm too lazy to expose it
+	//// show calendars list: run manually because I'm too lazy to expose it
 	// ListCalendars(srv)
 
 	// show events
