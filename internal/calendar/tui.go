@@ -3,8 +3,9 @@ package calendar
 
 import (
 	"context"
-	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -62,14 +63,17 @@ func RenderTUI(events []CalendarEvent) {
 
 				if isEventStart {
 					// fill with title
-					formatString := fmt.Sprintf("[white:blue]%%-%ds[-:-]\n", 23) // 23 whitespace
-					fmt.Fprintf(dayTextView, formatString, eventTitle)
+					title := eventTitle
+					if len(title) > 23 {
+						title = title[:23]
+					}
+					dayTextView.Write([]byte("[white:blue]" + title + strings.Repeat(" ", 23-len(title)) + "[-:-]\n"))
 				} else if isEventContinuing {
 					// fill without title
-					fmt.Fprintf(dayTextView, "[white:blue]                       [-:-]\n") // 23 whitespace
+					dayTextView.Write([]byte("[white:blue]                       [-:-]\n")) // 23 whitespace
 				} else {
 					// Empty slot
-					fmt.Fprintf(dayTextView, "       \n")
+					dayTextView.Write([]byte("       \n"))
 				}
 			}
 		}
@@ -177,7 +181,7 @@ func rebuildLayout() {
 	timeScale = tview.NewTextView().SetDynamicColors(true)
 	timeScale.SetBorder(true).SetTitle("Time")
 	for i := 0; i < 24; i++ {
-		fmt.Fprintf(timeScale, "%02d:00\n\n", i) // Display every hour, leave space for minutes
+		timeScale.Write([]byte(strconv.Itoa(i/10) + strconv.Itoa(i%10) + ":00\n\n"))
 	}
 	flex.AddItem(timeScale, 8, 1, false) // Fixed width for time scale
 
