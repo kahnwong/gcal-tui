@@ -3,12 +3,13 @@ package gcal
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
-	"net/http"
-	"time"
 )
 
 var ctx = context.Background()

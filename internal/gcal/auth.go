@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/kahnwong/gcal-tui/configs"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
-	"net/http"
-	"os"
-	"time"
 )
 
 func ReadOauthClientID(path string) *oauth2.Config {
@@ -53,7 +54,7 @@ func GetClient(accountName string, config *oauth2.Config) *http.Client {
 		}
 		saveToken(tokFile, tok)
 	} else {
-		//log.Debug().Msg("Using existing valid token")
+		log.Debug().Msg("Using existing valid token")
 	}
 	return config.Client(context.Background(), tok)
 }

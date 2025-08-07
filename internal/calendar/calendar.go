@@ -1,11 +1,13 @@
 package calendar
 
 import (
+	"time"
+
 	cliBase "github.com/kahnwong/cli-base"
 	"github.com/kahnwong/gcal-tui/configs"
 	"github.com/kahnwong/gcal-tui/internal/gcal"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
-	"time"
 )
 
 type CalendarEvent struct {
@@ -27,13 +29,13 @@ func ParseCalendars(events *calendar.Events) []CalendarEvent {
 			// Timed event
 			startTime, err := time.Parse(time.RFC3339, item.Start.DateTime)
 			if err != nil {
-				//fmt.Errorf("error parsing start time for event '%s': %w", item.Summary, err)
+				log.Error().Err(err).Msgf("error parsing start time for event: %s", item.Summary)
 			}
 			event.StartTime = startTime
 
 			endTime, err := time.Parse(time.RFC3339, item.End.DateTime)
 			if err != nil {
-				//fmt.Errorf("error parsing end time for event '%s': %w", item.Summary, err)
+				log.Error().Err(err).Msgf("error parsing end time for event: %s", item.Summary)
 			}
 			event.EndTime = endTime
 		} else if item.Start.Date != "" {
@@ -45,19 +47,19 @@ func ParseCalendars(events *calendar.Events) []CalendarEvent {
 			// endDate is exclusive, so it might be the next day.
 			startDate, err := time.Parse("2006-01-02", item.Start.Date)
 			if err != nil {
-				//fmt.Errorf("error parsing all-day start date for event '%s': %w", item.Summary, err)
+				log.Error().Err(err).Msgf("error parsing all-day start date for event: %s", item.Summary)
 			}
 			event.StartTime = startDate
 
 			endDate, err := time.Parse("2006-01-02", item.End.Date)
 			if err != nil {
-				//fmt.Errorf("error parsing all-day end date for event '%s': %w", item.Summary, err)
+				log.Error().Err(err).Msgf("error parsing all-day end date for event: %s", item.Summary)
 			}
 			// For all-day events, Google Calendar's end date is exclusive.
 			// To represent the end of the last day, subtract a nanosecond.
 			event.EndTime = endDate.Add(-time.Nanosecond)
 		} else {
-			//fmt.Errorf("event '%s' has no start or end time/date", item.Summary)
+			log.Error().Msgf("event '%s' has no start or end time/date", item.Summary)
 		}
 
 		calendarEvents = append(calendarEvents, event)
