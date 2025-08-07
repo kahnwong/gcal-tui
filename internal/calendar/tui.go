@@ -89,14 +89,14 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 
 				if isEventStart {
 					// fill with title
-					formatString := fmt.Sprintf("[white:%s]%%-%ds[-:-]\n", eventColor, eventPadding)
+					formatString := fmt.Sprintf("[black:%s]%%-%ds[-:-]\n", eventColor, eventPadding)
 					_, err := fmt.Fprintf(dayTextView, formatString, eventTitle)
 					if err != nil {
 						log.Error().Err(err).Msg("failed to write event start fill")
 					}
 				} else if isEventContinuing {
 					// fill without title
-					_, err := fmt.Fprintf(dayTextView, "[white:%s]%*s[-:-]\n", eventColor, eventPadding, "")
+					_, err := fmt.Fprintf(dayTextView, "[black:%s]%*s[-:-]\n", eventColor, eventPadding, "")
 					if err != nil {
 						log.Error().Err(err).Msg("failed to write event end fill")
 					}
