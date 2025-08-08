@@ -1,3 +1,4 @@
+// initial code mostly generated via gemini
 package calendar
 
 import (

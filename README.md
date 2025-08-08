@@ -21,3 +21,27 @@ unquote("AUTHORIZATION_CODE")
 ## Pre-reqs
 
 Create `Oauth Client ID` with scope `calendar.events`.
+
+Then create a config at `~/.config/gcal-tui/config.yaml`
+
+```yaml
+accounts:
+    - name: personal
+      credentials: ~/.config/gcal-tui/foo.json
+      calendars:
+        - id: primary
+          color: aqua
+        - id: xxxxxxxx@group.calendar.google.com
+          color: green
+    - name: alternate
+      credentials: ~/.config/gcal-tui/bar.json
+      calendars:
+        - id: primary
+          color: teal
+```
+
+But you should add one account at a time. I still haven't added `init` command to init access token request for each account.
+
+## Screenshot
+
+![screenshot](docs/screenshot.webp)
