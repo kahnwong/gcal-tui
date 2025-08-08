@@ -18,6 +18,7 @@ import (
 )
 
 var (
+	now                = time.Now()
 	currentOffset  int = 0 // Track horizontal scroll position
 	maxVisibleDays int
 	eventPadding   = 23 // Event display padding width
@@ -46,8 +47,8 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 	// add marker for current time
 	events = append(events, CalendarEvent{
 		Title:     "",
-		StartTime: time.Now(),
-		EndTime:   time.Now().Add(30 * time.Minute),
+		StartTime: now,
+		EndTime:   now.Add(30 * time.Minute),
 		Color:     "red",
 	})
 
@@ -66,6 +67,7 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 
 				isEventStart := false
 				isEventContinuing := false
+				isCurrentlyActive := false
 				var eventTitle string
 				var eventColor string
 
@@ -79,6 +81,12 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 							eventTitle = tview.Escape(event.Title[:21]) // prevent new line overflow when rendering
 						}
 						eventColor = event.Color
+
+						// check if currently active
+						if now.After(event.StartTime) && now.Before(event.EndTime) {
+							isCurrentlyActive = true
+						}
+
 						break
 					}
 					// Check if this slot is within an event (but not its start)
@@ -107,6 +115,10 @@ func RenderTUI(dayAdjustment int, events []CalendarEvent) {
 					}
 
 					formatString := fmt.Sprintf("[black:%s]%%-%ds[-:-]\n", eventColor, eventStartPadding)
+					// add marker if currently active
+					if isCurrentlyActive {
+						formatString = fmt.Sprintf("[red:%s]%%-%ds[-:-]\n", eventColor, eventStartPadding)
+					}
 
 					_, err := fmt.Fprintf(dayTextView, formatString, eventTitle)
 					if err != nil {
