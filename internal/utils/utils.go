@@ -23,3 +23,7 @@ func GenerateStartAndEndOfWeekTime(dayAdjustment int) (time.Time, time.Time) { /
 
 	return currentMonday.AddDate(0, 0, dayAdjustment), upcomingMonday.AddDate(0, 0, dayAdjustment)
 }
+
+func GetNowLocalAdjusted() time.Time {
+	return time.Now().Add(time.Hour * 7) // hardcoded for Asia/Bangkok
+}

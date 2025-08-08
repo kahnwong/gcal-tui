@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
@@ -31,7 +30,7 @@ func ListCalendars(srv *calendar.Service) {
 	}
 }
 
-func GetEvents(dayAdjustment int, calendarId string, client *http.Client) *calendar.Events {
+func GetEvents(weekStart time.Time, calendarId string, client *http.Client) *calendar.Events {
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
@@ -41,12 +40,10 @@ func GetEvents(dayAdjustment int, calendarId string, client *http.Client) *calen
 	// ListCalendars(srv)
 
 	// show events
-	startTime, endTime := utils.GenerateStartAndEndOfWeekTime(dayAdjustment)
 	events, err := srv.Events.List(calendarId).ShowDeleted(false).
 		SingleEvents(true).
-		TimeMin(startTime.Format(time.RFC3339)).
-		TimeMax(endTime.Format(time.RFC3339)).
-		MaxResults(50).OrderBy("startTime").Do()
+		TimeMin(weekStart.Format(time.RFC3339)).
+		MaxResults(15).OrderBy("startTime").Do()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to retrieve next ten of the user's events")
 	}

@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kahnwong/gcal-tui/internal/utils"
+
 	cliBase "github.com/kahnwong/cli-base"
 	"github.com/kahnwong/gcal-tui/configs"
 	"github.com/kahnwong/gcal-tui/internal/gcal"
@@ -15,7 +17,7 @@ type CalendarEvent struct {
 	Title     string
 	StartTime time.Time
 	EndTime   time.Time
-	Color     string // see <https://github.com/rivo/tview/blob/a4a78f1e05cbdedca1e2a5f2a1120fea713674db/ansi.go#L109-L124>
+	Color     string
 }
 
 func ParseCalendars(color string, events *calendar.Events) []CalendarEvent {
@@ -65,19 +67,23 @@ func ParseCalendars(color string, events *calendar.Events) []CalendarEvent {
 			log.Error().Msgf("event '%s' has no start or end time/date", item.Summary)
 		}
 
+		// time adjustment
+		_, startTimeOffsetSeconds := event.StartTime.Zone()
+
+		event.StartTime = event.StartTime.Add(time.Second * time.Duration(startTimeOffsetSeconds))
+		event.EndTime = event.EndTime.Add(time.Second * time.Duration(startTimeOffsetSeconds))
+
 		calendarEvents = append(calendarEvents, event)
 	}
 
 	return calendarEvents
 }
 
-func FetchAllEvents(dayAdjustment int) []CalendarEvent {
+func FetchAllEvents(weekStart time.Time) []CalendarEvent {
 	var allEvents []CalendarEvent
 
 	resultsCh := make(chan []CalendarEvent, 100) // Buffer size can be tuned
-
 	var accountsWg sync.WaitGroup
-
 	for _, c := range configs.AppConfig.Accounts {
 		accountsWg.Add(1)
 		go func(account configs.Account) {
@@ -90,7 +96,7 @@ func FetchAllEvents(dayAdjustment int) []CalendarEvent {
 				calendarsWg.Add(1)
 				go func(calInfo configs.Calendar) {
 					defer calendarsWg.Done()
-					events := gcal.GetEvents(dayAdjustment, calInfo.Id, client)
+					events := gcal.GetEvents(weekStart, calInfo.Id, client)
 					calendarEvents := ParseCalendars(calInfo.Color, events)
 					resultsCh <- calendarEvents
 				}(calendarInfo)
@@ -108,5 +114,38 @@ func FetchAllEvents(dayAdjustment int) []CalendarEvent {
 		allEvents = append(allEvents, events...)
 	}
 
+	// for making current time in calendar
+	now := roundToNearestHalfHour(utils.GetNowLocalAdjusted())
+	allEvents = append(allEvents, CalendarEvent{
+		Title:     "CURRENT TIME",
+		StartTime: now,
+		EndTime:   now.Add(time.Minute * 30),
+		Color:     "red",
+	})
+
 	return allEvents
+}
+
+func roundToNearestHalfHour(t time.Time) time.Time {
+	minute := t.Minute()
+	second := t.Second()
+	nanosecond := t.Nanosecond()
+
+	// Calculate total minutes past the hour, including seconds and nanoseconds as fractions of a minute
+	totalMinutes := float64(minute) + float64(second)/60.0 + float64(nanosecond)/(60.0*1e9)
+
+	var roundedTime time.Time
+
+	if totalMinutes >= 45 {
+		// Round up to the next hour
+		roundedTime = t.Truncate(time.Hour).Add(time.Hour)
+	} else if totalMinutes >= 15 {
+		// Round to :30
+		roundedTime = t.Truncate(time.Hour).Add(30 * time.Minute)
+	} else {
+		// Round down to :00
+		roundedTime = t.Truncate(time.Hour)
+	}
+
+	return roundedTime
 }
