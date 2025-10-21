@@ -45,25 +45,25 @@ func ParseCalendars(color string, events *calendar.Events) []CalendarEvent {
 			}
 			event.EndTime = endTime
 		} else if item.Start.Date != "" {
-			// All-day event
-			// For all-day events, the API returns "YYYY-MM-DD".
-			// We can interpret this as the start of the day in UTC, or the local timezone
-			// depending on requirements. For simplicity, we'll parse it as a date and
-			// set time to midnight. Note that Google Calendar's all-day events
-			// endDate is exclusive, so it might be the next day.
-			startDate, err := time.Parse("2006-01-02", item.Start.Date)
-			if err != nil {
-				log.Error().Err(err).Msgf("error parsing all-day start date for event: %s", item.Summary)
-			}
-			event.StartTime = startDate
-
-			endDate, err := time.Parse("2006-01-02", item.End.Date)
-			if err != nil {
-				log.Error().Err(err).Msgf("error parsing all-day end date for event: %s", item.Summary)
-			}
-			// For all-day events, Google Calendar's end date is exclusive.
-			// To represent the end of the last day, subtract a nanosecond.
-			event.EndTime = endDate.Add(-time.Nanosecond)
+			//// All-day event
+			//// For all-day events, the API returns "YYYY-MM-DD".
+			//// We can interpret this as the start of the day in UTC, or the local timezone
+			//// depending on requirements. For simplicity, we'll parse it as a date and
+			//// set time to midnight. Note that Google Calendar's all-day events
+			//// endDate is exclusive, so it might be the next day.
+			//startDate, err := time.Parse("2006-01-02", item.Start.Date)
+			//if err != nil {
+			//	log.Error().Err(err).Msgf("error parsing all-day start date for event: %s", item.Summary)
+			//}
+			//event.StartTime = startDate
+			//
+			//endDate, err := time.Parse("2006-01-02", item.End.Date)
+			//if err != nil {
+			//	log.Error().Err(err).Msgf("error parsing all-day end date for event: %s", item.Summary)
+			//}
+			//// For all-day events, Google Calendar's end date is exclusive.
+			//// To represent the end of the last day, subtract a nanosecond.
+			//event.EndTime = endDate.Add(-time.Nanosecond)
 		} else {
 			log.Error().Msgf("event '%s' has no start or end time/date", item.Summary)
 		}
