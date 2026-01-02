@@ -94,7 +94,7 @@ func getTokenFromWeb(accountName string, config *oauth2.Config) *oauth2.Token {
 }
 
 func saveToken(path string, token *oauth2.Token) {
-	fmt.Printf("Saving credential file to: %s\n", path)
+	log.Debug().Msgf("Saving credential file to: %s\n", path)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Unable to cache oauth token")

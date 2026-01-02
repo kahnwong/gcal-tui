@@ -32,4 +32,5 @@ func Execute() {
 func init() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+
 }
