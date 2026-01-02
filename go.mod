@@ -5,7 +5,7 @@ go 1.24.3
 require (
 	github.com/charmbracelet/bubbletea v1.3.6
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/kahnwong/cli-base v0.0.0-20250806100710-60d4c6902dd9
+	github.com/kahnwong/cli-base v0.0.0-20260101083643-0c950e574c26
 	github.com/rs/zerolog v1.34.0
 	golang.org/x/oauth2 v0.30.0
 	google.golang.org/api v0.245.0
