@@ -2,6 +2,7 @@ package calendar
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,8 +11,10 @@ import (
 )
 
 type Model struct {
-	Events    []CalendarEvent
-	WeekStart time.Time // Monday of the current week
+	Events      []CalendarEvent
+	StartDate   time.Time // Starting date (Monday for week view, specific date for today view)
+	ColumnCount int       // Number of columns (1 for today, 7 for week)
+	ColWidth    int       // Width of each column
 }
 
 func GetColorValue(name string) lipgloss.Color {
@@ -30,8 +33,6 @@ func GetColorValue(name string) lipgloss.Color {
 }
 
 // Styles for rendering
-const ColWidth = 20
-
 var (
 	EventStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#000000")).Bold(true)
 	EventStyleActive = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Bold(true)
@@ -46,16 +47,40 @@ var (
 	SeparatorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#555"))
 )
 
-func InitialModel() Model {
+// NewModel creates a new calendar model with specified column count and width
+func NewModel(columnCount int, colWidth int) Model {
 	now := time.Now()
-	// Find Monday of current week
-	offset := int(now.Weekday()) - 1
-	if offset < 0 {
-		offset = 6 // Sunday
+	var startDate time.Time
+
+	if columnCount == 7 {
+		// Week view: find Monday of current week
+		offset := int(now.Weekday()) - 1
+		if offset < 0 {
+			offset = 6 // Sunday
+		}
+		startDate = now.AddDate(0, 0, -offset).Truncate(24 * time.Hour)
+	} else {
+		// Today view: use current date
+		startDate = now.Truncate(24 * time.Hour)
 	}
-	weekStart := now.AddDate(0, 0, -offset).Truncate(24 * time.Hour)
-	events := FetchAllEvents(weekStart)
-	return Model{Events: events, WeekStart: weekStart}
+
+	events := FetchAllEvents(startDate)
+	return Model{
+		Events:      events,
+		StartDate:   startDate,
+		ColumnCount: columnCount,
+		ColWidth:    colWidth,
+	}
+}
+
+// InitialModel creates a week view model (7 columns, 20 width) - for backward compatibility
+func InitialModel() Model {
+	return NewModel(7, 20)
+}
+
+// InitialTodayModel creates a today view model (1 column, 20 width) - for backward compatibility
+func InitialTodayModel() Model {
+	return NewModel(1, 20)
 }
 
 func (m Model) Init() tea.Cmd { return nil }
@@ -67,33 +92,52 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "left":
-			// Previous week
-			m.WeekStart = m.WeekStart.AddDate(0, 0, -7)
-			m.Events = FetchAllEvents(m.WeekStart)
+			if m.ColumnCount == 7 {
+				// Previous week
+				m.StartDate = m.StartDate.AddDate(0, 0, -7)
+			} else {
+				// Previous day
+				m.StartDate = m.StartDate.AddDate(0, 0, -1)
+			}
+			m.Events = FetchAllEvents(m.StartDate)
 		case "right":
-			// Next week
-			m.WeekStart = m.WeekStart.AddDate(0, 0, 7)
-			m.Events = FetchAllEvents(m.WeekStart)
+			if m.ColumnCount == 7 {
+				// Next week
+				m.StartDate = m.StartDate.AddDate(0, 0, 7)
+			} else {
+				// Next day
+				m.StartDate = m.StartDate.AddDate(0, 0, 1)
+			}
+			m.Events = FetchAllEvents(m.StartDate)
 		}
 	}
 	return m, nil
 }
 
 func (m Model) View() string {
-	// Time slots: 8am to 6pm, 30-minute intervals
+	// Time slots: 8am to 11pm, 30-minute intervals
 	startHour, endHour := 8, 23
 	days := []string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
 
-	// Header row
-	header := TimeLabelStyle.Width(7).Render("") // time label column for alignment
-	for d := 0; d < 7; d++ {
-		dayDate := m.WeekStart.AddDate(0, 0, d)
-		header += HeaderStyle.Width(ColWidth).Render(fmt.Sprintf("%s %02d/%02d", days[d], dayDate.Month(), dayDate.Day()))
-		if d < 6 {
-			header += SeparatorStyle.Width(1).Render("|")
+	var headerParts []string
+	headerParts = append(headerParts, TimeLabelStyle.Width(7).Render("")) // time label column for alignment
+
+	for d := range m.ColumnCount {
+		dayDate := m.StartDate.AddDate(0, 0, d)
+		var dayLabel string
+		if m.ColumnCount == 1 {
+			dayLabel = dayDate.Format("Monday 01/02")
+		} else {
+			dayLabel = fmt.Sprintf("%s %02d/%02d", days[d], dayDate.Month(), dayDate.Day())
+		}
+		headerParts = append(headerParts, HeaderStyle.Width(m.ColWidth).Render(dayLabel))
+		if d < m.ColumnCount-1 {
+			headerParts = append(headerParts, SeparatorStyle.Width(1).Render("|"))
 		}
 	}
-	table := header + "\n"
+
+	var tableRows []string
+	tableRows = append(tableRows, strings.Join(headerParts, ""))
 
 	// Time rows (30-minute intervals)
 	now := utils.GetNowLocalAdjusted()
@@ -105,10 +149,14 @@ func (m Model) View() string {
 			} else {
 				timeLabel = ""
 			}
-			row := TimeLabelStyle.Width(7).Render(timeLabel)
-			for d := 0; d < 7; d++ {
-				cellTime := m.WeekStart.AddDate(0, 0, d).Add(time.Hour * time.Duration(hour)).Add(time.Minute * time.Duration(min))
-				cell := EmptyStyle.Width(ColWidth).Render("")
+
+			var rowParts []string
+			rowParts = append(rowParts, TimeLabelStyle.Width(7).Render(timeLabel))
+
+			for d := range m.ColumnCount {
+				cellTime := m.StartDate.AddDate(0, 0, d).Add(time.Hour * time.Duration(hour)).Add(time.Minute * time.Duration(min))
+				cell := EmptyStyle.Width(m.ColWidth).Render("")
+
 				for _, e := range m.Events {
 					// Check if cellTime is within event duration
 					if cellTime.Equal(e.StartTime) || (cellTime.After(e.StartTime) && cellTime.Before(e.EndTime)) {
@@ -116,8 +164,9 @@ func (m Model) View() string {
 						eventEnd := e.EndTime
 						totalSlots := int(eventEnd.Sub(eventStart).Minutes()) / 30
 						slotIndex := int(cellTime.Sub(eventStart).Minutes()) / 30
-						maxTitleLen := ColWidth - 2
+						maxTitleLen := m.ColWidth - 2
 						title := e.Title
+
 						// Split title into chunks
 						var chunks []string
 						for i := 0; i < len(title); i += maxTitleLen {
@@ -127,29 +176,37 @@ func (m Model) View() string {
 							}
 							chunks = append(chunks, title[i:end])
 						}
+
 						// Render chunk if within event duration and title length
 						if slotIndex < len(chunks) && slotIndex < totalSlots {
 							if now.After(e.StartTime) && now.Before(e.EndTime) {
-								cell = EventStyleActive.Background(GetColorValue(e.Color)).Width(ColWidth).Render(chunks[slotIndex])
+								cell = EventStyleActive.Background(GetColorValue(e.Color)).Width(m.ColWidth).Render(chunks[slotIndex])
 							} else {
-								cell = EventStyle.Background(GetColorValue(e.Color)).Width(ColWidth).Render(chunks[slotIndex])
+								cell = EventStyle.Background(GetColorValue(e.Color)).Width(m.ColWidth).Render(chunks[slotIndex])
 							}
 						} else if slotIndex < totalSlots {
-							cell = EventStyle.Background(GetColorValue(e.Color)).Width(ColWidth).Render("")
+							cell = EventStyle.Background(GetColorValue(e.Color)).Width(m.ColWidth).Render("")
 						}
 						break
 					}
 				}
-				row += cell
-				if d < 6 {
-					row += SeparatorStyle.Width(1).Render("|")
+
+				rowParts = append(rowParts, cell)
+				if d < m.ColumnCount-1 {
+					rowParts = append(rowParts, SeparatorStyle.Width(1).Render("|"))
 				}
 			}
-			table += row + "\n"
+			tableRows = append(tableRows, strings.Join(rowParts, ""))
 		}
 	}
 
 	// Footer
-	table += "\n←/→: Prev/Next week   q: Quit\n"
-	return BorderStyle.Render(table)
+	var footerText string
+	if m.ColumnCount == 1 {
+		footerText = "\n←/→: Prev/Next day   q: Quit\n"
+	} else {
+		footerText = "\n←/→: Prev/Next week   q: Quit\n"
+	}
+
+	return BorderStyle.Render(strings.Join(tableRows, "\n") + footerText)
 }
