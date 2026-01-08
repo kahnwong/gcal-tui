@@ -250,7 +250,8 @@ func (m NextMeetingModel) View() string {
 	// Render the display
 	title := titleStyle.Render("📅 " + m.nextEvent.Title)
 	timeRemaining := timeStyle.Render("⏰ " + timeUntil)
-	startTime := detailsStyle.Render("Starts: " + m.nextEvent.StartTime.Format("Monday, January 2, 2006 at 3:04 PM"))
+
+	startTime := detailsStyle.Render("Starts: " + m.nextEvent.StartTime.Add(time.Hour*time.Duration(-7)).Format("Monday, January 2, 2006 at 3:04 PM"))
 	lastUpdated := lastUpdatedStyle.Render("Last updated: " + m.lastUpdate.Format("3:04:05 PM"))
 	footer := detailsStyle.Render("Press 'q' or Ctrl+C to quit")
 
