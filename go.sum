@@ -46,8 +46,8 @@ github.com/googleapis/gax-go/v2 v2.16.0 h1:iHbQmKLLZrexmb0OSsNGTeSTS0HO4YvFOG8g5
 github.com/googleapis/gax-go/v2 v2.16.0/go.mod h1:o1vfQjjNZn4+dPnRdl/4ZD7S9414Y4xA+a/6Icj6l14=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/kahnwong/cli-base v0.0.0-20260101083643-0c950e574c26 h1:UgeFyOn6aqgOQqPovbiO0n+yll3atq0lk9eqmM5j/mA=
-github.com/kahnwong/cli-base v0.0.0-20260101083643-0c950e574c26/go.mod h1:rDVsfweQ4kaxpAu+IZtZycFBUAfJX/72cEXpEoRyrVM=
+github.com/kahnwong/cli-base v0.0.0-20260130142944-47fb95a69ad9 h1:o/I6juFivYF8M4xU3COfBSTD1txQHQ4fVzUCoSfHDRk=
+github.com/kahnwong/cli-base v0.0.0-20260130142944-47fb95a69ad9/go.mod h1:rDVsfweQ4kaxpAu+IZtZycFBUAfJX/72cEXpEoRyrVM=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=

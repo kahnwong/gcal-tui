@@ -89,7 +89,12 @@ func FetchAllEvents(weekStart time.Time) []CalendarEvent {
 		accountsWg.Add(1)
 		go func(account configs.Account) {
 			defer accountsWg.Done()
-			oathClientIDJson, err := gcal.ReadOauthClientID(cliBase.ExpandHome(account.Credentials))
+			expandedPath, err := cliBase.ExpandHome(account.Credentials)
+			if err != nil {
+				log.Error().Err(err).Msgf("Failed to expand home path for account: %s", account.Name)
+				return
+			}
+			oathClientIDJson, err := gcal.ReadOauthClientID(expandedPath)
 			if err != nil {
 				log.Error().Err(err).Msgf("Failed to read OAuth client ID for account: %s", account.Name)
 				return

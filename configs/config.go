@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	cliBase "github.com/kahnwong/cli-base"
+	"github.com/rs/zerolog/log"
 )
 
 type Calendar struct {
@@ -20,5 +21,18 @@ type Config struct {
 	Accounts []Account `yaml:"accounts"`
 }
 
-var AppConfigBasePath = cliBase.ExpandHome("~/.config/gcal-tui")
-var AppConfig = cliBase.ReadYaml[Config](fmt.Sprintf("%s/config.yaml", AppConfigBasePath)) // init
+var AppConfigBasePath string
+var AppConfig *Config
+
+func init() {
+	var err error
+	AppConfigBasePath, err = cliBase.ExpandHome("~/.config/gcal-tui")
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to expand config path")
+	}
+
+	AppConfig, err = cliBase.ReadYaml[Config](fmt.Sprintf("%s/config.yaml", AppConfigBasePath))
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to read config")
+	}
+}
