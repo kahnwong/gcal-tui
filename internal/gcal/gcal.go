@@ -6,18 +6,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
 
 var ctx = context.Background()
 
-func ListCalendars(srv *calendar.Service) {
+func ListCalendars(srv *calendar.Service) error {
 	calendarListCall := srv.CalendarList.List()
 	calendarList, err := calendarListCall.Do()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to retrieve calendar list")
+		return fmt.Errorf("unable to retrieve calendar list: %w", err)
 	}
 
 	if len(calendarList.Items) == 0 {
@@ -28,12 +27,13 @@ func ListCalendars(srv *calendar.Service) {
 			fmt.Printf("- %s (Summary: %s)\n", item.Id, item.Summary)
 		}
 	}
+	return nil
 }
 
-func GetEvents(weekStart time.Time, calendarId string, client *http.Client) *calendar.Events {
+func GetEvents(weekStart time.Time, calendarId string, client *http.Client) (*calendar.Events, error) {
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to retrieve Calendar client")
+		return nil, fmt.Errorf("unable to retrieve Calendar client: %w", err)
 	}
 
 	//// show calendars list: run manually because I'm too lazy to expose it
@@ -45,8 +45,8 @@ func GetEvents(weekStart time.Time, calendarId string, client *http.Client) *cal
 		TimeMin(weekStart.Format(time.RFC3339)).
 		MaxResults(15).OrderBy("startTime").Do()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to retrieve next ten of the user's events")
+		return nil, fmt.Errorf("unable to retrieve next ten of the user's events: %w", err)
 	}
 
-	return events
+	return events, nil
 }

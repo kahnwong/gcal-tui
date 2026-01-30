@@ -13,10 +13,8 @@ var rootCmd = &cobra.Command{
 	Short: "A terminal-based Google Calendar viewer",
 }
 
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatal().Err(err).Msg("Error executing root command")
-	}
+func Execute() error {
+	return rootCmd.Execute()
 }
 
 func init() {

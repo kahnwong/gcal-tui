@@ -89,15 +89,27 @@ func FetchAllEvents(weekStart time.Time) []CalendarEvent {
 		accountsWg.Add(1)
 		go func(account configs.Account) {
 			defer accountsWg.Done()
-			oathClientIDJson := gcal.ReadOauthClientID(cliBase.ExpandHome(account.Credentials))
-			client := gcal.GetClient(account.Name, oathClientIDJson)
+			oathClientIDJson, err := gcal.ReadOauthClientID(cliBase.ExpandHome(account.Credentials))
+			if err != nil {
+				log.Error().Err(err).Msgf("Failed to read OAuth client ID for account: %s", account.Name)
+				return
+			}
+			client, err := gcal.GetClient(account.Name, oathClientIDJson)
+			if err != nil {
+				log.Error().Err(err).Msgf("Failed to get client for account: %s", account.Name)
+				return
+			}
 
 			var calendarsWg sync.WaitGroup
 			for _, calendarInfo := range account.Calendars {
 				calendarsWg.Add(1)
 				go func(calInfo configs.Calendar) {
 					defer calendarsWg.Done()
-					events := gcal.GetEvents(weekStart, calInfo.Id, client)
+					events, err := gcal.GetEvents(weekStart, calInfo.Id, client)
+					if err != nil {
+						log.Fatal().Err(err).Msgf("Failed to get events for calendar: %s", calInfo.Id)
+						return
+					}
 					calendarEvents := ParseCalendars(calInfo.Color, events)
 					resultsCh <- calendarEvents
 				}(calendarInfo)
