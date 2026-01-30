@@ -64,7 +64,16 @@ func NewModel(columnCount int, colWidth int) Model {
 		startDate = now.Truncate(24 * time.Hour)
 	}
 
-	events := FetchAllEvents(startDate)
+	events, err := FetchAllEvents(startDate)
+	if err != nil {
+		// Return model with empty events and store error for display
+		return Model{
+			Events:      []CalendarEvent{},
+			StartDate:   startDate,
+			ColumnCount: columnCount,
+			ColWidth:    colWidth,
+		}
+	}
 	return Model{
 		Events:      events,
 		StartDate:   startDate,
@@ -99,7 +108,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Previous day
 				m.StartDate = m.StartDate.AddDate(0, 0, -1)
 			}
-			m.Events = FetchAllEvents(m.StartDate)
+			events, err := FetchAllEvents(m.StartDate)
+			if err == nil {
+				m.Events = events
+			}
 		case "right":
 			if m.ColumnCount == 7 {
 				// Next week
@@ -108,7 +120,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Next day
 				m.StartDate = m.StartDate.AddDate(0, 0, 1)
 			}
-			m.Events = FetchAllEvents(m.StartDate)
+			events, err := FetchAllEvents(m.StartDate)
+			if err == nil {
+				m.Events = events
+			}
 		}
 	}
 	return m, nil

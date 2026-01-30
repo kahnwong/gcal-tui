@@ -16,7 +16,10 @@ func GetNextMeeting() (*CalendarEvent, error) {
 
 	// Fetch events starting from now for the next week
 	weekStart := now.Truncate(24 * time.Hour)
-	allEvents := FetchAllEvents(weekStart)
+	allEvents, err := FetchAllEvents(weekStart)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch events: %w", err)
+	}
 
 	// Filter out past events and the "CURRENT TIME" marker
 	var upcomingEvents []CalendarEvent

@@ -2,6 +2,7 @@
 package calendar
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	cliBase "github.com/kahnwong/cli-base"
 	"github.com/kahnwong/gcal-tui/configs"
 	"github.com/kahnwong/gcal-tui/internal/gcal"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/api/calendar/v3"
 )
 
@@ -21,7 +21,7 @@ type CalendarEvent struct {
 	Color     string
 }
 
-func ParseCalendars(color string, events *calendar.Events) []CalendarEvent {
+func ParseCalendars(color string, events *calendar.Events) ([]CalendarEvent, error) {
 	var calendarEvents []CalendarEvent
 
 	for _, item := range events.Items {
@@ -35,13 +35,13 @@ func ParseCalendars(color string, events *calendar.Events) []CalendarEvent {
 			// Timed event
 			startTime, err := time.Parse(time.RFC3339, item.Start.DateTime)
 			if err != nil {
-				log.Error().Err(err).Msgf("error parsing start time for event: %s", item.Summary)
+				return nil, fmt.Errorf("error parsing start time for event '%s': %w", item.Summary, err)
 			}
 			event.StartTime = startTime
 
 			endTime, err := time.Parse(time.RFC3339, item.End.DateTime)
 			if err != nil {
-				log.Error().Err(err).Msgf("error parsing end time for event: %s", item.Summary)
+				return nil, fmt.Errorf("error parsing end time for event '%s': %w", item.Summary, err)
 			}
 			event.EndTime = endTime
 		} else if item.Start.Date != "" {
@@ -53,19 +53,19 @@ func ParseCalendars(color string, events *calendar.Events) []CalendarEvent {
 			//// endDate is exclusive, so it might be the next day.
 			//startDate, err := time.Parse("2006-01-02", item.Start.Date)
 			//if err != nil {
-			//	log.Error().Err(err).Msgf("error parsing all-day start date for event: %s", item.Summary)
+			//	return nil, fmt.Errorf("error parsing all-day start date for event '%s': %w", item.Summary, err)
 			//}
 			//event.StartTime = startDate
 			//
 			//endDate, err := time.Parse("2006-01-02", item.End.Date)
 			//if err != nil {
-			//	log.Error().Err(err).Msgf("error parsing all-day end date for event: %s", item.Summary)
+			//	return nil, fmt.Errorf("error parsing all-day end date for event '%s': %w", item.Summary, err)
 			//}
 			//// For all-day events, Google Calendar's end date is exclusive.
 			//// To represent the end of the last day, subtract a nanosecond.
 			//event.EndTime = endDate.Add(-time.Nanosecond)
 		} else {
-			log.Error().Msgf("event '%s' has no start or end time/date", item.Summary)
+			return nil, fmt.Errorf("event '%s' has no start or end time/date", item.Summary)
 		}
 
 		// time adjustment
@@ -77,13 +77,14 @@ func ParseCalendars(color string, events *calendar.Events) []CalendarEvent {
 		calendarEvents = append(calendarEvents, event)
 	}
 
-	return calendarEvents
+	return calendarEvents, nil
 }
 
-func FetchAllEvents(weekStart time.Time) []CalendarEvent {
+func FetchAllEvents(weekStart time.Time) ([]CalendarEvent, error) {
 	var allEvents []CalendarEvent
 
 	resultsCh := make(chan []CalendarEvent, 100) // Buffer size can be tuned
+	errorsCh := make(chan error, 100)
 	var accountsWg sync.WaitGroup
 	for _, c := range configs.AppConfig.Accounts {
 		accountsWg.Add(1)
@@ -91,17 +92,17 @@ func FetchAllEvents(weekStart time.Time) []CalendarEvent {
 			defer accountsWg.Done()
 			expandedPath, err := cliBase.ExpandHome(account.Credentials)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to expand home path for account: %s", account.Name)
+				errorsCh <- fmt.Errorf("failed to expand home path for account '%s': %w", account.Name, err)
 				return
 			}
 			oathClientIDJson, err := gcal.ReadOauthClientID(expandedPath)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to read OAuth client ID for account: %s", account.Name)
+				errorsCh <- fmt.Errorf("failed to read OAuth client ID for account '%s': %w", account.Name, err)
 				return
 			}
 			client, err := gcal.GetClient(account.Name, oathClientIDJson)
 			if err != nil {
-				log.Error().Err(err).Msgf("Failed to get client for account: %s", account.Name)
+				errorsCh <- fmt.Errorf("failed to get client for account '%s': %w", account.Name, err)
 				return
 			}
 
@@ -112,10 +113,14 @@ func FetchAllEvents(weekStart time.Time) []CalendarEvent {
 					defer calendarsWg.Done()
 					events, err := gcal.GetEvents(weekStart, calInfo.Id, client)
 					if err != nil {
-						log.Fatal().Err(err).Msgf("Failed to get events for calendar: %s", calInfo.Id)
+						errorsCh <- fmt.Errorf("failed to get events for calendar '%s': %w", calInfo.Id, err)
 						return
 					}
-					calendarEvents := ParseCalendars(calInfo.Color, events)
+					calendarEvents, err := ParseCalendars(calInfo.Color, events)
+					if err != nil {
+						errorsCh <- fmt.Errorf("failed to parse calendars for calendar '%s': %w", calInfo.Id, err)
+						return
+					}
 					resultsCh <- calendarEvents
 				}(calendarInfo)
 			}
@@ -126,10 +131,28 @@ func FetchAllEvents(weekStart time.Time) []CalendarEvent {
 	go func() {
 		accountsWg.Wait()
 		close(resultsCh)
+		close(errorsCh)
 	}()
 
-	for events := range resultsCh {
-		allEvents = append(allEvents, events...)
+	// Collect results and errors
+	var errors []error
+	done := make(chan struct{})
+	go func() {
+		for events := range resultsCh {
+			allEvents = append(allEvents, events...)
+		}
+		close(done)
+	}()
+
+	for err := range errorsCh {
+		errors = append(errors, err)
+	}
+
+	<-done
+
+	// Return first error if any occurred
+	if len(errors) > 0 {
+		return nil, errors[0]
 	}
 
 	// for making current time in calendar
@@ -141,7 +164,7 @@ func FetchAllEvents(weekStart time.Time) []CalendarEvent {
 		Color:     "red",
 	})
 
-	return allEvents
+	return allEvents, nil
 }
 
 func roundToNearestHalfHour(t time.Time) time.Time {
