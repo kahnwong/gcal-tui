@@ -1,7 +1,10 @@
 package configs
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"testing"
 
 	cliBase "github.com/kahnwong/cli-base"
 	"github.com/rs/zerolog/log"
@@ -31,8 +34,12 @@ func init() {
 		log.Fatal().Err(err).Msg("failed to expand config path")
 	}
 
-	AppConfig, err = cliBase.ReadYaml[Config](fmt.Sprintf("%s/config.yaml", AppConfigBasePath))
+	configPath := fmt.Sprintf("%s/config.yaml", AppConfigBasePath)
+	AppConfig, err = cliBase.ReadYaml[Config](configPath)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) && testing.Testing() {
+			return
+		}
 		log.Fatal().Err(err).Msg("failed to read config")
 	}
 }
