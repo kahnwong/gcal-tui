@@ -3,7 +3,7 @@ module github.com/kahnwong/gcal-tui
 go 1.25.0
 
 require (
-	github.com/charmbracelet/bubbletea v1.3.10
+	github.com/charmbracelet/bubbletea/v2 v2.0.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/kahnwong/cli-base v0.0.0-20260130183058-8a3218b043b2
 	github.com/rs/zerolog v1.34.0
