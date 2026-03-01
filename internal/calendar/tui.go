@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kahnwong/gcal-tui/internal/utils"
+	"github.com/rs/zerolog/log"
 )
 
 type Model struct {
@@ -66,13 +67,7 @@ func NewModel(columnCount int, colWidth int) Model {
 
 	events, err := FetchAllEvents(startDate)
 	if err != nil {
-		// Return model with empty events and store error for display
-		return Model{
-			Events:      []CalendarEvent{},
-			StartDate:   startDate,
-			ColumnCount: columnCount,
-			ColWidth:    colWidth,
-		}
+		log.Fatal().Err(err).Msg("Error fetching events")
 	}
 	return Model{
 		Events:      events,

@@ -11,7 +11,8 @@ var nextMeetingCmd = &cobra.Command{
 	Short: "Show the next upcoming calendar event",
 	Long:  `Display the next upcoming calendar event and the time remaining until it starts. Updates every minute.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		p := tea.NewProgram(calendar.InitialNextMeetingModel(), tea.WithAltScreen())
+		model := calendar.NewNextMeetingModel()
+		p := tea.NewProgram(model, tea.WithAltScreen())
 		if _, err := p.Run(); err != nil {
 			return err
 		}

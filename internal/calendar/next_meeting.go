@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/kahnwong/gcal-tui/internal/utils"
+	"github.com/rs/zerolog/log"
 )
 
 // GetNextMeeting fetches all events and returns the next upcoming event
@@ -161,12 +162,15 @@ func doTick() tea.Cmd {
 	})
 }
 
-// InitialNextMeetingModel creates the initial model for next meeting display
-func InitialNextMeetingModel() NextMeetingModel {
+// NewNextMeetingModel creates a new next meeting model
+func NewNextMeetingModel() NextMeetingModel {
 	nextEvent, err := GetNextMeeting()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error fetching next meeting")
+	}
 	return NextMeetingModel{
 		nextEvent:  nextEvent,
-		err:        err,
+		err:        nil,
 		lastUpdate: time.Now(),
 	}
 }
@@ -187,8 +191,13 @@ func (m NextMeetingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tickMsg:
 		// Update the next meeting data every minute
 		nextEvent, err := GetNextMeeting()
+		if err != nil {
+			// Print error to stdout and quit
+			fmt.Println(err)
+			return m, tea.Quit
+		}
 		m.nextEvent = nextEvent
-		m.err = err
+		m.err = nil
 		m.lastUpdate = time.Time(msg)
 		return m, doTick() // Schedule next tick
 	}
