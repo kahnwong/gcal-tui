@@ -125,8 +125,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	// Time slots: 8am to 11pm, 30-minute intervals
-	startHour, endHour := 8, 23
+	// Time slots: 8am to 12am, 30-minute intervals
+	startHour, endHour := 8, 24
 	days := []string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
 
 	var headerParts []string
