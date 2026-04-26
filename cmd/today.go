@@ -4,7 +4,7 @@ import (
 	"github.com/kahnwong/gcal-tui/internal/calendar"
 	"github.com/spf13/cobra"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 var todayCmd = &cobra.Command{
@@ -13,7 +13,7 @@ var todayCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Create a today view with 1 column and 20 width
 		model := calendar.NewModel(1, 20)
-		p := tea.NewProgram(model, tea.WithAltScreen())
+		p := tea.NewProgram(model)
 		if _, err := p.Run(); err != nil {
 			return err
 		}
