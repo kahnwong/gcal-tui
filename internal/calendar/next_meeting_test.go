@@ -1,10 +1,11 @@
 package calendar
 
 import (
+	"image/color"
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 func TestFormatTimeUntil(t *testing.T) {
@@ -91,7 +92,7 @@ func TestGetTimeColor(t *testing.T) {
 	tests := []struct {
 		name      string
 		eventTime time.Time
-		expected  lipgloss.Color
+		expected  color.Color
 	}{
 		{
 			name:      "15 minutes or less - red",
@@ -131,8 +132,8 @@ func TestGetTimeColor(t *testing.T) {
 			// For a simplified test, we just verify it returns a valid color
 			result := GetTimeColor(tt.eventTime)
 
-			if result == "" {
-				t.Error("Expected non-empty color")
+			if result == nil {
+				t.Error("Expected non-nil color")
 			}
 		})
 	}

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/kahnwong/gcal-tui/internal/calendar"
 	"github.com/spf13/cobra"
 )
@@ -12,7 +12,7 @@ var nextMeetingCmd = &cobra.Command{
 	Long:  `Display the next upcoming calendar event and the time remaining until it starts. Updates every minute.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		model := calendar.NewNextMeetingModel()
-		p := tea.NewProgram(model, tea.WithAltScreen())
+		p := tea.NewProgram(model)
 		if _, err := p.Run(); err != nil {
 			return err
 		}

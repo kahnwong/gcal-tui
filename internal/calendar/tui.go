@@ -2,11 +2,12 @@ package calendar
 
 import (
 	"fmt"
+	"image/color"
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rs/zerolog/log"
 )
@@ -18,18 +19,18 @@ type Model struct {
 	ColWidth    int       // Width of each column
 }
 
-func GetColorValue(name string) lipgloss.Color {
+func GetColorValue(name string) color.Color {
 	switch name {
 	case "aqua":
-		return "#00FFFF"
+		return lipgloss.Color("#00FFFF")
 	case "teal":
-		return "#008080"
+		return lipgloss.Color("#008080")
 	case "green":
-		return "#00FF00"
+		return lipgloss.Color("#00FF00")
 	case "red":
-		return "#FF0000"
+		return lipgloss.Color("#FF0000")
 	default:
-		return "#FFA500" // fallback color
+		return lipgloss.Color("#FFA500") // fallback color
 	}
 }
 
@@ -91,7 +92,7 @@ func (m Model) Init() tea.Cmd { return nil }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -124,7 +125,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
+	v := tea.NewView("")
+	v.AltScreen = true
+
 	// Time slots: 8am to 12am, 30-minute intervals
 	startHour, endHour := 8, 24
 	days := []string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
@@ -218,5 +222,6 @@ func (m Model) View() string {
 		footerText = "\n←/→: Prev/Next week   q: Quit\n"
 	}
 
-	return BorderStyle.Render(strings.Join(tableRows, "\n") + footerText)
+	v.SetContent(BorderStyle.Render(strings.Join(tableRows, "\n") + footerText))
+	return v
 }

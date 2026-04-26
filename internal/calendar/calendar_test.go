@@ -1,10 +1,11 @@
 package calendar
 
 import (
+	"image/color"
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"google.golang.org/api/calendar/v3"
 )
 
@@ -12,14 +13,14 @@ func TestGetColorValue(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected lipgloss.Color
+		expected color.Color
 	}{
-		{"aqua color", "aqua", "#00FFFF"},
-		{"teal color", "teal", "#008080"},
-		{"green color", "green", "#00FF00"},
-		{"red color", "red", "#FF0000"},
-		{"unknown color defaults to orange", "unknown", "#FFA500"},
-		{"empty string defaults to orange", "", "#FFA500"},
+		{"aqua color", "aqua", lipgloss.Color("#00FFFF")},
+		{"teal color", "teal", lipgloss.Color("#008080")},
+		{"green color", "green", lipgloss.Color("#00FF00")},
+		{"red color", "red", lipgloss.Color("#FF0000")},
+		{"unknown color defaults to orange", "unknown", lipgloss.Color("#FFA500")},
+		{"empty string defaults to orange", "", lipgloss.Color("#FFA500")},
 	}
 
 	for _, tt := range tests {

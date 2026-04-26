@@ -2,11 +2,12 @@ package calendar
 
 import (
 	"fmt"
+	"image/color"
 	"sort"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/kahnwong/gcal-tui/internal/utils"
 	"github.com/rs/zerolog/log"
 )
@@ -77,7 +78,7 @@ func FormatTimeUntil(eventTime time.Time) string {
 }
 
 // GetTimeColor returns the appropriate color based on time remaining until event
-func GetTimeColor(eventTime time.Time) lipgloss.Color {
+func GetTimeColor(eventTime time.Time) color.Color {
 	now := utils.GetNowLocalAdjusted()
 	duration := eventTime.Sub(now)
 
@@ -183,7 +184,7 @@ func (m NextMeetingModel) Init() tea.Cmd {
 // Update handles messages and updates the model
 func (m NextMeetingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -205,14 +206,18 @@ func (m NextMeetingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View renders the next meeting display
-func (m NextMeetingModel) View() string {
+func (m NextMeetingModel) View() tea.View {
+	v := tea.NewView("")
+	v.AltScreen = true
+
 	if m.err != nil {
 		errorStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF0000")).
 			Bold(true).
 			Align(lipgloss.Center).
 			Padding(2)
-		return errorStyle.Render(fmt.Sprintf("Error: %v", m.err))
+		v.SetContent(errorStyle.Render(fmt.Sprintf("Error: %v", m.err)))
+		return v
 	}
 
 	if m.nextEvent == nil {
@@ -221,7 +226,8 @@ func (m NextMeetingModel) View() string {
 			Bold(true).
 			Align(lipgloss.Center).
 			Padding(2)
-		return errorStyle.Render("No upcoming events found")
+		v.SetContent(errorStyle.Render("No upcoming events found"))
+		return v
 	}
 
 	timeUntil := FormatTimeUntil(m.nextEvent.StartTime)
@@ -270,5 +276,6 @@ func (m NextMeetingModel) View() string {
 	content := lipgloss.JoinVertical(lipgloss.Center, title, timeRemaining, startTime, lastUpdated, footer)
 	display := containerStyle.Render(content)
 
-	return display
+	v.SetContent(display)
+	return v
 }

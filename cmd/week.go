@@ -4,7 +4,7 @@ import (
 	"github.com/kahnwong/gcal-tui/internal/calendar"
 	"github.com/spf13/cobra"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 var weekCmd = &cobra.Command{
@@ -13,7 +13,7 @@ var weekCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Create a week view with 7 columns and 20 width, starting on Monday
 		model := calendar.NewModel(7, 20)
-		p := tea.NewProgram(model, tea.WithAltScreen())
+		p := tea.NewProgram(model)
 		if _, err := p.Run(); err != nil {
 			return err
 		}
