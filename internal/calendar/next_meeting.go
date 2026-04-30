@@ -3,13 +3,14 @@ package calendar
 import (
 	"fmt"
 	"image/color"
+	"log/slog"
+	"os"
 	"sort"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/kahnwong/gcal-tui/internal/utils"
-	"github.com/rs/zerolog/log"
 )
 
 // GetNextMeeting fetches all events and returns the next upcoming event
@@ -167,7 +168,8 @@ func doTick() tea.Cmd {
 func NewNextMeetingModel() NextMeetingModel {
 	nextEvent, err := GetNextMeeting()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Error fetching next meeting")
+		slog.Error("Error fetching next meeting", "error", err)
+		os.Exit(1)
 	}
 	return NextMeetingModel{
 		nextEvent:  nextEvent,

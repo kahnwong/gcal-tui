@@ -1,12 +1,15 @@
 package main
 
 import (
+	"log/slog"
+	"os"
+
 	"github.com/kahnwong/gcal-tui/cmd"
-	"github.com/rs/zerolog/log"
 )
 
 func main() {
 	if err := cmd.Execute(); err != nil {
-		log.Fatal().Err(err).Msg("Error executing command")
+		slog.Error("Error executing command", "error", err)
+		os.Exit(1)
 	}
 }

@@ -3,11 +3,11 @@ package configs
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 
 	cliBase "github.com/kahnwong/cli-base"
-	"github.com/rs/zerolog/log"
 )
 
 type Calendar struct {
@@ -31,7 +31,8 @@ func init() {
 	var err error
 	AppConfigBasePath, err = cliBase.ExpandHome("~/.config/gcal-tui")
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to expand config path")
+		slog.Error("failed to expand config path", "error", err)
+		os.Exit(1)
 	}
 
 	configPath := fmt.Sprintf("%s/config.yaml", AppConfigBasePath)
@@ -40,6 +41,7 @@ func init() {
 		if errors.Is(err, os.ErrNotExist) && testing.Testing() {
 			return
 		}
-		log.Fatal().Err(err).Msg("failed to read config")
+		slog.Error("failed to read config", "error", err)
+		os.Exit(1)
 	}
 }

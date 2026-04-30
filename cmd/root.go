@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	slogzerolog "github.com/samber/slog-zerolog/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +23,7 @@ func init() {
 }
 
 func init() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	zerologLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
+	logger := slog.New(slogzerolog.Option{Level: slog.LevelError, Logger: &zerologLogger}.NewZerologHandler())
+	slog.SetDefault(logger)
 }

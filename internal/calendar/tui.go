@@ -3,13 +3,14 @@ package calendar
 import (
 	"fmt"
 	"image/color"
+	"log/slog"
+	"os"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/kahnwong/gcal-tui/internal/utils"
-	"github.com/rs/zerolog/log"
 )
 
 type Model struct {
@@ -68,7 +69,8 @@ func NewModel(columnCount int, colWidth int) Model {
 
 	events, err := FetchAllEvents(startDate)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Error fetching events")
+		slog.Error("Error fetching events", "error", err)
+		os.Exit(1)
 	}
 	return Model{
 		Events:      events,
