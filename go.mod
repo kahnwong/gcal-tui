@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	charm.land/bubbletea/v2 v2.0.6
 	charm.land/lipgloss/v2 v2.0.3
-	github.com/kahnwong/cli-base v0.0.0-20260130183058-8a3218b043b2
+	github.com/kahnwong/cli-base v0.0.0-20260430061757-292811e13a6d
 	github.com/rs/zerolog v1.35.1
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/oauth2 v0.36.0
