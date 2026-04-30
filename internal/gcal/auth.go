@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/kahnwong/gcal-tui/configs"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
@@ -34,7 +34,7 @@ func GetClient(accountName string, config *oauth2.Config) (*http.Client, error) 
 	tokFile := fmt.Sprintf("%s/%s-token.json", configs.AppConfigBasePath, accountName)
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
-		log.Info().Msg("No valid token found, requesting new token from web")
+		slog.Info("No valid token found, requesting new token from web")
 		tok, err = getTokenFromWeb(accountName, config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get token from web: %w", err)
@@ -44,9 +44,9 @@ func GetClient(accountName string, config *oauth2.Config) (*http.Client, error) 
 		}
 	} else if !tok.Valid() || tok.Expiry.Before(time.Now().Add(5*time.Minute)) {
 		// Token is invalid, expired, or expires within 5 minutes, try to refresh it
-		log.Info().Msg("Token expired or expiring soon, attempting to refresh")
+		slog.Info("Token expired or expiring soon, attempting to refresh")
 		if tok.RefreshToken == "" {
-			log.Warn().Msg("No refresh token available, requesting new token from web")
+			slog.Warn("No refresh token available, requesting new token from web")
 			tok, err = getTokenFromWeb(accountName, config)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get token from web: %w", err)
@@ -54,20 +54,20 @@ func GetClient(accountName string, config *oauth2.Config) (*http.Client, error) 
 		} else {
 			tok, err = refreshToken(config, tok)
 			if err != nil {
-				log.Warn().Err(err).Msg("Failed to refresh token, requesting new token from web")
+				slog.Warn("Failed to refresh token, requesting new token from web", "error", err)
 				tok, err = getTokenFromWeb(accountName, config)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get token from web: %w", err)
 				}
 			} else {
-				log.Info().Msg("Token refreshed successfully")
+				slog.Info("Token refreshed successfully")
 			}
 		}
 		if err = saveToken(tokFile, tok); err != nil {
 			return nil, fmt.Errorf("failed to save token: %w", err)
 		}
 	} else {
-		log.Debug().Msg("Using existing valid token")
+		slog.Debug("Using existing valid token")
 	}
 	return config.Client(context.Background(), tok), nil
 }
@@ -79,7 +79,7 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 	}
 	defer func(f *os.File) {
 		if err := f.Close(); err != nil {
-			log.Warn().Err(err).Msg("Unable to close token file")
+			slog.Warn("Unable to close token file", "error", err)
 		}
 	}(f)
 	tok := &oauth2.Token{}
@@ -106,14 +106,14 @@ func getTokenFromWeb(accountName string, config *oauth2.Config) (*oauth2.Token, 
 }
 
 func saveToken(path string, token *oauth2.Token) error {
-	log.Debug().Msgf("Saving credential file to: %s\n", path)
+	slog.Debug(fmt.Sprintf("Saving credential file to: %s", path))
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("unable to cache oauth token: %w", err)
 	}
 	defer func(f *os.File) {
 		if err := f.Close(); err != nil {
-			log.Warn().Err(err).Msg("Error closing oauth token file")
+			slog.Warn("Error closing oauth token file", "error", err)
 		}
 	}(f)
 	err = json.NewEncoder(f).Encode(token)
@@ -139,6 +139,6 @@ func refreshToken(config *oauth2.Config, token *oauth2.Token) (*oauth2.Token, er
 		newToken.RefreshToken = token.RefreshToken
 	}
 
-	//log.Debug().Msg("Successfully refreshed OAuth token")
+	//slog.Debug("Successfully refreshed OAuth token")
 	return newToken, nil
 }
