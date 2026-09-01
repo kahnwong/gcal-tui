@@ -1,6 +1,6 @@
 module github.com/kahnwong/gcal-tui
 
-go 1.27.0
+go 1.27.1
 
 require (
 	charm.land/bubbletea/v2 v2.0.6
