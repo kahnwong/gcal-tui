@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	charm.land/bubbletea/v2 v2.0.6
 	charm.land/lipgloss/v2 v2.0.3
-	github.com/kahnwong/cli-base v0.0.0-20260630163537-c7bc0284984a
+	github.com/kahnwong/cli-base v0.0.0-20260901075751-219b9c6ba9cd
 	github.com/rs/zerolog v1.35.1
 	github.com/samber/slog-zerolog/v2 v2.9.2
 	github.com/spf13/cobra v1.10.2
