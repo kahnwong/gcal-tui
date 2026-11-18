@@ -3,7 +3,7 @@ module github.com/kahnwong/gcal-tui
 go 1.27.0
 
 require (
-	charm.land/bubbletea/v2 v2.1.1
+	charm.land/bubbletea/v2 v2.1.2
 	charm.land/lipgloss/v2 v2.1.1
 	github.com/kahnwong/cli-base v0.0.0-20260630163537-c7bc0284984a
 	github.com/rs/zerolog v1.35.1
